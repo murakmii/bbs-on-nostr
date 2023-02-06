@@ -1,0 +1,3 @@
+# BBS on Nostr
+
+WIP
