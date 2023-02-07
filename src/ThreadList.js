@@ -3,7 +3,6 @@ import Form from './Form';
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { relayInit, nip19, getPublicKey, getEventHash, signEvent } from 'nostr-tools';
-import toast from 'react-hot-toast';
 
 const bbsRelayURL = 'wss://nostr-pub.wellorder.net';
 const bbsRootReference = 'https://bbs-on-nostr.murakmii.dev';
@@ -48,7 +47,7 @@ function ThreadList() {
           });
         });
       } catch (e) {
-        toast.error('エラーが発生しました。ネットワークの調子が悪いかも?');
+        window.alert('スレッド一覧取得中にエラーが発生しました。ネットワークの調子が悪いかも?');
       }
     })();
 
@@ -113,11 +112,11 @@ function ThreadList() {
   
       let pub = relayRef.current.publish(event);
       pub.on('ok', () => {
-        toast.success('スレッドを作成しました！');
+        window.alert('スレッドを作成しました！');
         setAt(new Date().getTime());
       });
       pub.on('failed', reason => {
-        toast.error(`スレッドの作成に失敗しました...(${reason})`);
+        window.alert(`スレッドの作成に失敗しました...(${reason})`);
       });
     })();
   };

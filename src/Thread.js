@@ -3,7 +3,6 @@ import Form from './Form';
 import { useState, useEffect, useRef } from 'react';
 import { relayInit, nip19, getPublicKey, getEventHash, signEvent } from 'nostr-tools';
 import { useParams } from 'react-router-dom';
-import toast from 'react-hot-toast';
 
 const bbsRelayURL = 'wss://nostr-pub.wellorder.net';
 const bbsRootReference = 'https://bbs-on-nostr.murakmii.dev';
@@ -45,7 +44,7 @@ function Thread() {
           thread.unsub();
         });
       } catch (e) {
-        toast.error('エラーが発生しました。ネットワークの調子が悪いかも?');
+        window.alert('スレッド情報取得中にエラーが発生しました。ネットワークの調子が悪いかも?');
       }
     })();
 
@@ -117,11 +116,11 @@ function Thread() {
 
       let pub = relayRef.current.publish(event);
       pub.on('ok', () => {
-        toast.success('返信しました！');
+        window.alert('返信しました！');
         setAt(new Date().getTime());
       });
       pub.on('failed', reason => {
-        toast.error(`返信に失敗しました...(${reason})`);
+        window.alert(`返信に失敗しました...(${reason})`);
       });
     })();
   };
