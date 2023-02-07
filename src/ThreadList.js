@@ -130,7 +130,9 @@ function ThreadList() {
 
         {threads.map((t, i) => (
           <div key={i} className="Thread">
-            <img src={profiles[t.pubkey] && profiles[t.pubkey].picture} />
+            <a href={"https://snort.social/p/" + t.pubkey} target="_blank" rel="noreferrer">
+              <img src={profiles[t.pubkey] && profiles[t.pubkey].picture} />
+            </a>
 
             <div>
               <h3><Link to={`/threads/${t.id}`}>{t.subject}</Link></h3>

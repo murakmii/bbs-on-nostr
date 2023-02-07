@@ -48,5 +48,12 @@
   display: block;
   border-radius: 25px;
   border: solid 1px #d3d3d3;
-  margin-right: 10px;
+}
+
+#Thread .Replies .Reply img:hover {
+  opacity: 0.6;
+}
+
+#Thread .Replies .Reply div {
+  margin-left: 10px;
 }

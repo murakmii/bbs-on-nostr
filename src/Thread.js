@@ -147,7 +147,10 @@ function Thread() {
 
         {replies.map(r => (
           <div className="Reply" key={r.id}>
-            <img src={profiles[r.pubkey] && profiles[r.pubkey].picture} />
+            <a href={"https://snort.social/p/" + r.pubkey} target="_blank" rel="noreferrer">
+              <img src={profiles[r.pubkey] && profiles[r.pubkey].picture} />
+            </a>
+            
             <div className="Detail">
               <h4>{profiles[r.pubkey] && profiles[r.pubkey].display_name} at {new Date(r.createdAt * 1000).toLocaleString()}</h4>
               <p>{r.content}</p>
