@@ -1,0 +1,52 @@
+#ThreadContent {
+  display: flex;
+  padding: 20px;
+  margin-bottom: 30px;
+  background-color: white;
+  border: solid 1px #860486;
+}
+
+#ThreadContent h3 b {
+  color: #999;
+  font-size: 0.7em;
+}
+
+#ThreadContent img {
+  width: 70px;
+  height: 70px;
+  display: block;
+  border-radius: 35px;
+  border: solid 1px #d3d3d3;
+  margin-right: 20px;
+}
+
+#ThreadContent p {
+  margin-top: 20px;
+}
+
+#Thread .Replies {
+  background-color: white;
+  border: solid 1px #860486;
+}
+
+#Thread .Replies h2 {
+  color: #5d3d6e;
+  font-size: 1.3em;
+  padding: 10px;
+  text-align: center;
+}
+
+#Thread .Replies .Reply {
+  padding: 10px;
+  border-top: solid 1px #d3d3d3;
+  display: flex;
+}
+
+#Thread .Replies .Reply img {
+  width: 50px;
+  height: 50px;
+  display: block;
+  border-radius: 25px;
+  border: solid 1px #d3d3d3;
+  margin-right: 10px;
+}

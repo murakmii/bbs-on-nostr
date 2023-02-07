@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App';
 import ToS from './ToS';
+import Thread from './Thread';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 
 const router = createBrowserRouter([
@@ -13,6 +14,10 @@ const router = createBrowserRouter([
       {
         path: 'tos',
         element: <ToS />,
+      },
+      {
+        path: 'threads/:id',
+        element: <Thread />,
       },
     ],
   },

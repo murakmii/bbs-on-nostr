@@ -90,31 +90,36 @@ function ThreadList() {
   // NIP-14(https://github.com/nostr-protocol/nips/blob/master/14.md)に従ってタイトル情報をタグに設定する。
   // また、このノートがスレッド一覧取得のフィルタにマッチするようr-tagを設定しておく。
   // このように作成されたノートはSNS用クライアントからは通常のノートのように表示されるはず。
-  const createThread = ({ subject, content, encodedPrivKey }) => {
-    const privkey = nip19.decode(encodedPrivKey).data;
-    const pubkey = getPublicKey(privkey);
-
-    let event = {
-      kind: 1,
-      pubkey: pubkey,
-      created_at: Math.floor(Date.now() / 1000),
-      tags: [
-        ['subject', subject],
-        ['r', bbsRootReference],
-      ],
-      content: content,
-    };
-
-    event.id = getEventHash(event);
-    event.sig = signEvent(event, privkey);
-
-    let pub = relayRef.current.publish(event);
-    pub.on('ok', () => {
-      toast.success('スレッドを作成しました！');
-    });
-    pub.on('failed', reason => {
-      toast.error(`スレッドの作成に失敗しました...(${reason})`);
-    });
+  const createThread = ({ subject, content, encodedPrivKey, useNIP07 }) => {
+    (async () => {
+      let event = {
+        kind: 1,
+        created_at: Math.floor(Date.now() / 1000),
+        tags: [
+          ['subject', subject],
+          ['r', bbsRootReference],
+        ],
+        content: content,
+      };
+  
+      if (useNIP07) {
+        event = await window.nostr.signEvent(event);
+      } else {
+        const privkey = nip19.decode(encodedPrivKey).data;
+        event.pubkey = getPublicKey(privkey);
+        event.id = getEventHash(event);
+        event.sig = signEvent(event, privkey);
+      }
+  
+      let pub = relayRef.current.publish(event);
+      pub.on('ok', () => {
+        toast.success('スレッドを作成しました！');
+        setAt(new Date().getTime());
+      });
+      pub.on('failed', reason => {
+        toast.error(`スレッドの作成に失敗しました...(${reason})`);
+      });
+    })();
   };
 
   return (
@@ -122,7 +127,7 @@ function ThreadList() {
       <Form forThread={true} key={at} onSubmit={createThread} />
 
       <div className="Threads">
-        <h2>Threads</h2>
+        <h2>Thread List</h2>
 
         {threads.map((t, i) => (
           <div key={i} className="Thread">
@@ -134,7 +139,6 @@ function ThreadList() {
             </div>
           </div>
         ))}
-
       </div>
     </div>
   )

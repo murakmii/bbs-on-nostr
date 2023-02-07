@@ -4,16 +4,18 @@ import { useState } from 'react';
 
 function Form({ forThread, onSubmit }) {
   const [validInput, setValidInput] = useState(false);
+  const [useNIP07, setUseNIP07] = useState(false);
+  const enableNIP07 = window.nostr && window.nostr.signEvent;
 
   const validate = () => {
     const subject = forThread && document.form.subject.value;
     const content = document.form.content.value;
     const privkey = document.form.privkey.value;
-
+    
     return (
       (!forThread || (subject.length > 0 && subject.length < 100 && !subject.includes('nsec'))) &&
       content.length > 0 && content.length < 1000 && !content.includes('nsec') &&
-      privkey.length > 0 &&
+      (document.form.useNIP07.checked || privkey.length > 0) &&
       document.form.tos.checked
     );
   };
@@ -24,8 +26,17 @@ function Form({ forThread, onSubmit }) {
     onSubmit({
       subject: forThread && document.form.subject.value,
       content: document.form.content.value,
-      privkey: document.form.privkey.value,
+      encodedPrivKey: document.form.privkey.value,
+      useNIP07: document.form.useNIP07.checked,
     });
+  };
+
+  const onChangeUseNIP07 = (e) => {
+    setUseNIP07(e.target.checked);
+    if (e.target.checked) {
+      document.form.privkey.value = '';
+    }
+    setValidInput(validate());
   };
 
   return (
@@ -51,7 +62,9 @@ function Form({ forThread, onSubmit }) {
           <tr>
             <th>秘密鍵</th>
             <td>
-              <input type="text" name="privkey" placeholder="nsecXXX..." onChange={() => setValidInput(validate())} /><br />
+              <input type="text" name="privkey" placeholder="nsecXXX..." onChange={() => setValidInput(validate())} disabled={useNIP07} /><br />
+              <input type="checkbox" disabled={!enableNIP07} name="useNIP07" id="UseNIP07" onChange={onChangeUseNIP07} />
+              <label htmlFor="UseNIP07">{'NIP-07対応機能で署名する' + (enableNIP07 ? '' : ' - このブラウザには拡張機能が導入されていません')}</label>
             </td>
           </tr>
           <tr>
