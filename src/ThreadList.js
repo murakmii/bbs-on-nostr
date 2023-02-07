@@ -3,6 +3,7 @@ import Button from './Button';
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { relayInit, nip19, getPublicKey, getEventHash, signEvent } from 'nostr-tools';
+import toast from 'react-hot-toast';
 
 const bbsRelayURL = 'wss://nostr-pub.wellorder.net';
 const bbsRootReference = 'https://bbs-on-nostr.murakmii.dev';
@@ -16,17 +17,20 @@ function ThreadList() {
   const [profiles, setProfiles] = useState({});
   const [validInput, setValidInput] = useState(false);
   
+  // リレーとの接続を確立し、スレッド一覧を取得する
   useEffect(() => {
     (async () => {
       try {
         relayRef.current = relayInit(bbsRelayURL);
         await relayRef.current.connect();
 
+        // r-tag(https://github.com/nostr-protocol/nips/blob/master/12.md)に'https://bbs-on-nostr.murakmii.dev'を持つノートをスレッドとして扱う。
+        // 以下ではその条件に該当するノートを返すようフィルターを設定しsubscribeしている(念のため1000件でフィルタ)
         threadSubRef.current = relayRef.current.sub([
           {
             kinds: [1],
             '#r': [bbsRootReference],
-            limit: 100,
+            limit: 1000,
           }
         ]);
 
@@ -43,16 +47,16 @@ function ThreadList() {
             return newThreads.sort((a, b) => b.createdAt - a.createdAt);
           });
         });
-
-        threadSubRef.current.on('eose', () => threadSubRef.current.unsub());
       } catch (e) {
-        console.log('error', e);
+        toast.error('エラーが発生しました。ネットワークの調子が悪いかも?');
       }
     })();
 
     return () => relayRef.current.close();
   }, []);
 
+  // スレッド作成者のプロフィール情報を取得する。
+  // このような取得は恐らくどのようなSNS用クライアントでも行っているはず。
   useEffect(() => {
     const pubkeys = Array.from(new Set(threads.map(t => t.pubkey)));
 
@@ -94,6 +98,11 @@ function ThreadList() {
     );
   };
 
+  // スレッドの作成。
+  // この時作成されるノートにはスレッドのタイトルを設定したいので、
+  // NIP-14(https://github.com/nostr-protocol/nips/blob/master/14.md)に従ってタイトル情報をタグに設定する。
+  // また、このノートがスレッド一覧取得のフィルタにマッチするようr-tagを設定しておく。
+  // このように作成されたノートはSNS用クライアントからは通常のノートのように表示されるはず。
   const createThread = (e) => {
     e.preventDefault();
 
@@ -118,14 +127,19 @@ function ThreadList() {
     event.id = getEventHash(event);
     event.sig = signEvent(event, privkey);
 
-    console.log('complete event', event);
-    
     let pub = relayRef.current.publish(event);
     pub.on('ok', () => {
-      console.log(`${relayRef.current.url} has accepted our event`)
+      toast.success('スレッドを作成しました！');
+
+      document.thread.subject.value = '';
+      document.thread.content.value = '';
+      document.thread.privkey.value = '';
+      document.thread.tos.checked = false;
+
+      setValidInput(false);
     });
     pub.on('failed', reason => {
-      console.log(`failed to publish to ${relayRef.current.url}: ${reason}`)
+      toast.error(`スレッドの作成に失敗しました...(${reason})`);
     });
   };
 

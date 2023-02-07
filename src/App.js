@@ -1,10 +1,12 @@
 import './App.css';
 import ThreadList from './ThreadList';
 import { useOutlet } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 
 function App() {
   return (
     <div id="App">
+      <Toaster />
       <h1>BBS on Nostr</h1>
       <p>
         Nostr上に実験的に実装されたBBSです:
