@@ -70,7 +70,7 @@ function Form({ forThread, onSubmit }) {
           <tr>
             <td colSpan="2">
               <input type="checkbox" id="ReadTOS" name="tos" onChange={() => setValidInput(validate())} />
-              <label htmlFor="ReadTOS"><a href="/tos" target="_blank" rel="noopener">利用規約</a>に同意します</label>
+              <label htmlFor="ReadTOS"><a href="/tos" target="_blank" rel="noreferrer">利用規約</a>に同意します</label>
               <Button disabled={!validInput} onClick={submit}>{forThread ? 'スレッドを作成' : '返信'}</Button>
             </td>
           </tr>
