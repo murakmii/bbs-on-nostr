@@ -1,5 +1,5 @@
 import './ThreadList.css';
-import Button from './Button';
+import Form from './Form';
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { relayInit, nip19, getPublicKey, getEventHash, signEvent } from 'nostr-tools';
@@ -13,9 +13,9 @@ function ThreadList() {
   const threadSubRef = useRef();
   const profileSubRef = useRef();
 
+  const [at, setAt] = useState(new Date().getTime());
   const [threads, setThreads] = useState([]);
   const [profiles, setProfiles] = useState({});
-  const [validInput, setValidInput] = useState(false);
   
   // リレーとの接続を確立し、スレッド一覧を取得する
   useEffect(() => {
@@ -76,41 +76,22 @@ function ThreadList() {
     ]);
 
     profileSubRef.current.on('event', event => {
-      console.log('profile', event);
       setProfiles(prev => ({ ...prev, [event.pubkey]: JSON.parse(event.content) }));
     });
+
     profileSubRef.current.on('eose', event => {
       profileSubRef.current.unsub();
       profileSubRef.current = null;
     });
   }, [threads]);
 
-  const validate = () => {
-    const subject = document.thread.subject.value;
-    const content = document.thread.content.value;
-    const privkey = document.thread.privkey.value;
-
-    return (
-      subject.length > 0 && subject.length < 100 && !subject.includes('nsec') &&
-      content.length > 0 && content.length < 1000 && !content.includes('nsec') &&
-      privkey.length > 0 &&
-      document.thread.tos.checked
-    );
-  };
-
   // スレッドの作成。
   // この時作成されるノートにはスレッドのタイトルを設定したいので、
   // NIP-14(https://github.com/nostr-protocol/nips/blob/master/14.md)に従ってタイトル情報をタグに設定する。
   // また、このノートがスレッド一覧取得のフィルタにマッチするようr-tagを設定しておく。
   // このように作成されたノートはSNS用クライアントからは通常のノートのように表示されるはず。
-  const createThread = (e) => {
-    e.preventDefault();
-
-    if (!validate()) {
-      return;
-    }
-
-    const privkey = nip19.decode(document.thread.privkey.value).data;
+  const createThread = ({ subject, content, encodedPrivKey }) => {
+    const privkey = nip19.decode(encodedPrivKey).data;
     const pubkey = getPublicKey(privkey);
 
     let event = {
@@ -118,10 +99,10 @@ function ThreadList() {
       pubkey: pubkey,
       created_at: Math.floor(Date.now() / 1000),
       tags: [
-        ['subject', document.thread.subject.value],
+        ['subject', subject],
         ['r', bbsRootReference],
       ],
-      content: document.thread.content.value,
+      content: content,
     };
 
     event.id = getEventHash(event);
@@ -130,13 +111,6 @@ function ThreadList() {
     let pub = relayRef.current.publish(event);
     pub.on('ok', () => {
       toast.success('スレッドを作成しました！');
-
-      document.thread.subject.value = '';
-      document.thread.content.value = '';
-      document.thread.privkey.value = '';
-      document.thread.tos.checked = false;
-
-      setValidInput(false);
     });
     pub.on('failed', reason => {
       toast.error(`スレッドの作成に失敗しました...(${reason})`);
@@ -145,39 +119,7 @@ function ThreadList() {
 
   return (
     <div id="ThreadList">
-      <form name="thread" onSubmit={() => false}>
-        <table>
-          <tbody>
-            <tr>
-              <th>タイトル</th>
-              <td><input type="text" name="subject" onChange={() => setValidInput(validate())} /></td>
-            </tr>
-            <tr>
-              <th>本文</th>
-              <td>
-                <textarea 
-                  name="content" 
-                  placeholder="安全のため、'nsec'という文字が含まれるテキストを持つスレッドは作成できません"
-                  onChange={() => setValidInput(validate())}
-                />
-              </td>
-            </tr>
-            <tr>
-              <th>秘密鍵</th>
-              <td>
-                <input type="text" name="privkey" placeholder="nsecXXX..." onChange={() => setValidInput(validate())} /><br />
-              </td>
-            </tr>
-            <tr>
-              <td colSpan="2">
-                <input type="checkbox" id="ReadTOS" name="tos" onChange={() => setValidInput(validate())} />
-                <label htmlFor="ReadTOS"><a href="/tos" target="_blank" rel="noopener">利用規約</a>に同意します</label>
-                <Button disabled={!validInput} onClick={createThread}>スレッドを作成</Button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </form>
+      <Form forThread={true} key={at} onSubmit={createThread} />
 
       <div className="Threads">
         <h2>Threads</h2>

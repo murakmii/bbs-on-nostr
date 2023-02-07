@@ -1,0 +1,41 @@
+#Form {
+  margin-bottom: 20px;
+  padding: 20px;
+  background-color: white;
+  border: solid 1px #860486;
+}
+
+#Form table {
+  width: 100%;
+}
+
+#Form table th {
+  color: #5d3d6e;
+  width: 100px;
+  text-align: right;
+  vertical-align: top;
+  padding: 0 10px;
+}
+
+#Form table tr:last-child td {
+  text-align: right;
+}
+
+#Form table input[type="text"], #Form table textarea {
+  font-size: 1.1em;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 4px;
+  margin-bottom: 10px;
+  border: solid 1px gray;
+}
+
+#Form table textarea {
+  height: 200px;
+  font-size: 1.1em;
+  resize: none;
+}
+
+#Form table button {
+  margin-left: 10px;
+}

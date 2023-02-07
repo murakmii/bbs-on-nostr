@@ -3,48 +3,6 @@
   margin: 0 auto;
 }
 
-#ThreadList form {
-  margin-bottom: 20px;
-  padding: 20px;
-  background-color: white;
-  border: solid 1px #860486;
-}
-
-#ThreadList table {
-  width: 100%;
-}
-
-#ThreadList table th {
-  color: #5d3d6e;
-  width: 100px;
-  text-align: right;
-  vertical-align: top;
-  padding: 0 10px;
-}
-
-#ThreadList table tr:last-child td {
-  text-align: right;
-}
-
-#ThreadList table input[type="text"], #ThreadList table textarea {
-  font-size: 1.1em;
-  width: 100%;
-  box-sizing: border-box;
-  padding: 4px;
-  margin-bottom: 10px;
-  border: solid 1px gray;
-}
-
-#ThreadList table textarea {
-  height: 200px;
-  font-size: 1.1em;
-  resize: none;
-}
-
-#ThreadList table button {
-  margin-left: 10px;
-}
-
 #ThreadList .Threads {
   background-color: white;
   border: solid 1px #860486;
