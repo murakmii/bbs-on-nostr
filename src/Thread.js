@@ -134,7 +134,7 @@ function Thread() {
           <div className="Detail">
             <h3>
               {thread.subject}<br/>
-              <b>by {profiles[thread.pubkey] && profiles[thread.pubkey].display_name} created at {new Date(thread.createdAt * 1000).toLocaleDateString()}</b>
+              <b>by {profiles[thread.pubkey] && profiles[thread.pubkey].display_name} created at {new Date(thread.createdAt * 1000).toLocaleString()}</b>
             </h3>
             <p>{thread.content}</p>
           </div>
@@ -150,7 +150,7 @@ function Thread() {
           <div className="Reply" key={r.id}>
             <img src={profiles[r.pubkey] && profiles[r.pubkey].picture} />
             <div className="Detail">
-              <h4>{profiles[r.pubkey] && profiles[r.pubkey].display_name} at {new Date(r.createdAt * 1000).toLocaleDateString()}</h4>
+              <h4>{profiles[r.pubkey] && profiles[r.pubkey].display_name} at {new Date(r.createdAt * 1000).toLocaleString()}</h4>
               <p>{r.content}</p>
             </div>
           </div>

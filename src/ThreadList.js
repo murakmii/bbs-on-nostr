@@ -135,7 +135,7 @@ function ThreadList() {
 
             <div>
               <h3><Link to={`/threads/${t.id}`}>{t.subject}</Link></h3>
-              <p>by {profiles[t.pubkey] && profiles[t.pubkey].display_name} created at {new Date(t.createdAt * 1000).toLocaleDateString()}</p>
+              <p>by {profiles[t.pubkey] && profiles[t.pubkey].display_name} created at {new Date(t.createdAt * 1000).toLocaleString()}</p>
             </div>
           </div>
         ))}
