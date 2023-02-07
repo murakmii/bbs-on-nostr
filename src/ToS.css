@@ -1,0 +1,22 @@
+#ToS {
+  padding: 20px;
+  background-color: white;
+  border: solid 1px #860486;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+#ToS h2 {
+  color: #5d3d6e;
+  font-size: 1.3em;
+  padding: 10px;
+  text-align: center;
+}
+
+#ToS ul {
+  padding-left: 20px;
+}
+
+#ToS li {
+  margin: 5px 0;
+}

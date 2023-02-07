@@ -1,0 +1,87 @@
+#ThreadList {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+#ThreadList form {
+  margin-bottom: 20px;
+  padding: 20px;
+  background-color: white;
+  border: solid 1px #860486;
+}
+
+#ThreadList table {
+  width: 100%;
+}
+
+#ThreadList table th {
+  color: #5d3d6e;
+  width: 100px;
+  text-align: right;
+  vertical-align: top;
+  padding: 0 10px;
+}
+
+#ThreadList table tr:last-child td {
+  text-align: right;
+}
+
+#ThreadList table input[type="text"], #ThreadList table textarea {
+  font-size: 1.1em;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 4px;
+  margin-bottom: 10px;
+  border: solid 1px gray;
+}
+
+#ThreadList table textarea {
+  height: 200px;
+  font-size: 1.1em;
+  resize: none;
+}
+
+#ThreadList table button {
+  margin-left: 10px;
+}
+
+#ThreadList .Threads {
+  background-color: white;
+  border: solid 1px #860486;
+}
+
+#ThreadList .Threads h2 {
+  color: #5d3d6e;
+  font-size: 1.3em;
+  padding: 10px;
+  text-align: center;
+}
+
+#ThreadList .Threads .Thread {
+  padding: 10px;
+  border-top: solid 1px #d3d3d3;
+  display: flex;
+}
+
+#ThreadList .Threads .Thread img {
+  width: 50px;
+  height: 50px;
+  display: block;
+  border-radius: 25px;
+  border: solid 1px #d3d3d3;
+  margin-right: 10px;
+}
+
+#ThreadList .Threads .Thread h3 {
+  font-size: 1.2em;
+  margin-bottom: 6px;
+}
+
+#ThreadList .Threads .Thread h3 a {
+  color: #3647d5;
+  text-decoration: none;
+}
+
+#ThreadList .Threads .Thread h3 a:hover {
+  text-decoration: underline;
+}

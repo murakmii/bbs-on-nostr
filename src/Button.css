@@ -1,0 +1,24 @@
+.Button {
+  color: white;
+  font-size: 1.1em;
+  font-weight: bold;
+  padding: 10px 20px;
+  background-color: #7576ff;
+  border: solid 1px #4848bc;
+  box-shadow: 2px 2px 2px #c1c1fa;
+  cursor: pointer;
+}
+
+.Button[disabled] {
+  opacity: 0.4;
+  cursor: default;
+  box-shadow: none;
+}
+
+.Button:hover:not([disabled]) {
+  background-color: #6162d1;
+}
+
+.Button:hover:active:not([disabled]) {
+  box-shadow: none;
+}
