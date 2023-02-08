@@ -4,9 +4,10 @@
     <meta charset="utf-8" />
     <title>BBS on Nostr</title>
 
+    <!-- emoji-picker-react のため、style-src の unsafe-inline は妥協 -->
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; img-src https://*; connect-src wss://nostr-pub.wellorder.net/;" />
+      content="default-src 'self'; img-src https://* data:; connect-src wss://nostr-pub.wellorder.net/; style-src 'self' 'unsafe-inline';"/>
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
