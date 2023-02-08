@@ -36,7 +36,7 @@
   opacity: 0.6;
 }
 
-#ThreadList .Threads .Thread div {
+#ThreadList .Threads .Thread > div {
   margin-left: 10px;
 }
 
@@ -52,4 +52,47 @@
 
 #ThreadList .Threads .Thread h3 a:hover {
   text-decoration: underline;
+}
+
+#ThreadList .Threads .Thread b {
+  font-size: 0.8em;
+  line-height: 1;
+  color: white;
+  padding: 3px 5px;
+  display: none;
+  background-color: #7642d6;
+  border-radius: 3px;
+  cursor: pointer;
+  margin-left: 5px;
+}
+
+#ThreadList .Threads .Thread b:hover {
+  background-color: #5f38a7;
+}
+
+#ThreadList .Threads .Thread.EnableNIP07:hover b {
+  display: inline-block;
+}
+
+#ThreadList .Threads .Thread .Reactions {
+  margin-top: 5px;
+}
+
+#ThreadList .Threads .Thread .Reactions span {
+  font-weight: bold;
+  color: #C0C0C0;
+  padding-right: 4px;
+}
+
+#EmojiSelector {
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  position: fixed;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: rgba(240, 240, 240, 0.6);
+  backdrop-filter: blur(2px);
 }

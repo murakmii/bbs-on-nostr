@@ -3,19 +3,21 @@ import Form from './Form';
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { relayInit, nip19, getPublicKey, getEventHash, signEvent } from 'nostr-tools';
+import EmojiPicker from 'emoji-picker-react';
 
 const bbsRelayURL = 'wss://nostr-pub.wellorder.net';
 const bbsRootReference = 'https://bbs-on-nostr.murakmii.dev';
 
 function ThreadList() {
   const relayRef = useRef();
-  const threadSubRef = useRef();
 
   const [at, setAt] = useState(new Date().getTime());
   const [threads, setThreads] = useState([]);
   const [profiles, setProfiles] = useState({});
+  const [emojiSelectingFor, setEmojiSelectingFor] = useState(null);
+  const [reactions, setReactions] = useState({});
   
-  // リレーとの接続を確立し、スレッド一覧を取得する
+  // リレーとの接続を確立し、スレッド一覧他いくつかのsubscriptionを立ち上げる
   useEffect(() => {
     (async () => {
       try {
@@ -24,7 +26,7 @@ function ThreadList() {
 
         // r-tag(https://github.com/nostr-protocol/nips/blob/master/12.md)に'https://bbs-on-nostr.murakmii.dev'を持つノートをスレッドとして扱う。
         // 以下ではその条件に該当するノートを返すようフィルターを設定しsubscribeしている(念のため1000件でフィルタ)
-        threadSubRef.current = relayRef.current.sub([
+        const threadSub = relayRef.current.sub([
           {
             kinds: [1],
             '#r': [bbsRootReference],
@@ -32,7 +34,7 @@ function ThreadList() {
           }
         ]);
 
-        threadSubRef.current.on('event', event => {
+        threadSub.on('event', event => {
           setThreads(prevThreads => {
             const newThreads = prevThreads.concat({
               id: event.id,
@@ -43,6 +45,39 @@ function ThreadList() {
             });
 
             return newThreads.sort((a, b) => b.createdAt - a.createdAt);
+          });
+        });
+
+        // リアクションを恒久的にsubscribeする
+        // 今のところ、r-tagで絞り込みどのスレッドへのリアクションかはクライアント側で判定している
+        // (個別のe-tag指定でも取得できるが、r-tag1つの方がリレーの負荷が少ないのでは？と予想)
+        const reactionSub = relayRef.current.sub([
+          {
+            kinds: [7],
+            '#r': [bbsRootReference],
+          }
+        ]);
+
+        reactionSub.on('event', event => {
+          const threadID = (event.tags.filter(t => t[0] === 'e')[0] || [])[1];
+          if (!threadID || event.content === '+' || event.content === '-') { // +, -は表示に困るのであえて無視
+            return;
+          }
+
+          setReactions(prev => {
+            const newState = JSON.parse(JSON.stringify(prev));
+            
+            if (!newState[threadID]) {
+              newState[threadID] = {};
+            }
+            
+            if (newState[threadID][event.content]) {
+              newState[threadID][event.content] += 1;
+            } else {
+              newState[threadID][event.content] = 1;
+            }
+
+            return newState;
           });
         });
       } catch (e) {
@@ -125,22 +160,61 @@ function ThreadList() {
     })();
   };
 
+  // Emojiによるリアクション。Kind: 7であればよく、制限は少ない。
+  // contentに絵文字を含むことは可能だが、絵文字を使用した場合それがどのように解釈されるかはクライアント依存となっている。
+  const reaction = (emojiData) => {
+    (async () => {
+      let event = {
+        kind: 7,
+        created_at: Math.floor(Date.now() / 1000),
+        tags: [
+          ['r', bbsRootReference],
+          ['e', emojiSelectingFor, bbsRelayURL],
+        ],
+        content: emojiData.emoji,
+      };
+  
+      let pub = relayRef.current.publish(await window.nostr.signEvent(event));
+      pub.on('ok', () => {
+        console.log('emoji reaction succeeded!');
+      });
+      pub.on('failed', reason => {
+        window.alert(`スレッドの作成に失敗しました...(${reason})`);
+      });
+    })();
+  };
+
+  const enableNIP07 = window.nostr && window.nostr.signEvent; 
+
   return (
     <div id="ThreadList">
+      {emojiSelectingFor && (
+        <div id="EmojiSelector" onClick={() => setEmojiSelectingFor(null)}>
+          <EmojiPicker onEmojiClick={reaction} />
+        </div>
+      )}
+
       <Form forThread={true} key={at} onSubmit={createThread} />
 
       <div className="Threads">
         <h2>Thread List</h2>
-
         {threads.map((t, i) => (
-          <div key={i} className="Thread">
+          <div key={i} className={"Thread " + (enableNIP07 ? 'EnableNIP07' : '')}>
             <a href={"https://snort.social/p/" + t.pubkey} target="_blank" rel="noreferrer">
               <img src={profiles[t.pubkey] && profiles[t.pubkey].picture} />
             </a>
 
             <div>
               <h3><Link to={`/threads/${t.id}`}>{t.subject}</Link></h3>
-              <p>by {profiles[t.pubkey] && profiles[t.pubkey].display_name} created at {new Date(t.createdAt * 1000).toLocaleString()}</p>
+              <p>
+                by {profiles[t.pubkey] && profiles[t.pubkey].display_name} created at {new Date(t.createdAt * 1000).toLocaleString()} 
+                <b onClick={() => setEmojiSelectingFor(t.id)}>+ Reaction</b>
+              </p>
+              <div className="Reactions">
+                {reactions[t.id] && Object.keys(reactions[t.id]).map(emoji => {
+                  return <span key={emoji}>{emoji}:{reactions[t.id][emoji]}</span>
+                })}
+              </div>
             </div>
           </div>
         ))}
