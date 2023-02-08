@@ -5,6 +5,10 @@ import { useState } from 'react';
 function Form({ forThread, onSubmit }) {
   const [validInput, setValidInput] = useState(false);
   const [useNIP07, setUseNIP07] = useState(false);
+
+  // NIP-07(https://github.com/nostr-protocol/nips/blob/master/07.md)対応状況を確認し、
+  // 可能であれば「NIP-07対応機能で署名する」チェックボックスを有効にする。
+  // といっても単にwindowオブジェクトに所定のプロパティがあるかどうかを確認するだけ。
   const enableNIP07 = window.nostr && window.nostr.signEvent;
 
   const validate = () => {

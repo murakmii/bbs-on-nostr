@@ -17,7 +17,9 @@ function Thread() {
 
   const { id } = useParams();
 
-  // 初めにスレッド情報を取得する
+  // 始めにスレッド情報を取得する。
+  // URLのパスからイベントのIDは分かるため、スレッド一覧と同様の絞り込みに加えIDも指定して取得する。
+  // イベントが送信されないままEOSE通知が来た場合404であると判断できるが、実装していない。
   useEffect(() => {
     (async () => {
       try {
@@ -27,6 +29,7 @@ function Thread() {
         const thread = relayRef.current.sub([
           {
             ids: [id],
+            kinds: [1],
             '#r': [bbsRootReference],
             limit: 1,
           }
@@ -51,13 +54,21 @@ function Thread() {
     return () => relayRef.current.close();
   }, []);
 
-  // スレッドが取得できたならリプライ一覧を取得する
+  // スレッドが取得できたならリプライ一覧を取得する。
+  // リプライはSNS用クライアント向けの仕様と同様、
+  // 単にスレッドの元となっているイベントをe-tagで参照するテキストノートとしている。
   useEffect(() => {
     if (!thread) {
       return;
     }
 
-    const replies = relayRef.current.sub([{'#e': [thread.id]}]);
+    const replies = relayRef.current.sub([
+      {
+        kinds: [1], 
+        '#e': [thread.id],
+        limit: 1000, 
+      }
+    ]);
 
     replies.on('event', event => {
       setReplies(prevReplies => {
@@ -72,7 +83,8 @@ function Thread() {
     });
   }, [thread]);
 
-  // プロフィール情報を取得する
+  // スレッド或いはリプライ一覧の変動に応じてプロフィール情報を取得する
+  // この辺の処理はスレッド一覧の場合と同様。
   useEffect(() => {
     const exists = new Set(Object.keys(profiles));
     const pubkeys = replies.map(r => r.pubkey).concat(thread ? [thread.pubkey] : []).filter(p => !exists.has(p));

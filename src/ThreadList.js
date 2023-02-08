@@ -10,7 +10,6 @@ const bbsRootReference = 'https://bbs-on-nostr.murakmii.dev';
 function ThreadList() {
   const relayRef = useRef();
   const threadSubRef = useRef();
-  const profileSubRef = useRef();
 
   const [at, setAt] = useState(new Date().getTime());
   const [threads, setThreads] = useState([]);
@@ -54,34 +53,38 @@ function ThreadList() {
     return () => relayRef.current.close();
   }, []);
 
-  // スレッド作成者のプロフィール情報を取得する。
+  // スレッド数の変動に応じてプロフィール情報を取得する(kind: 0と公開鍵により絞り込み)。
   // このような取得は恐らくどのようなSNS用クライアントでも行っているはず。
   useEffect(() => {
-    const pubkeys = Array.from(new Set(threads.map(t => t.pubkey)));
+    // 未取得のプロフィールのみ取得
+    const exists = new Set(Object.keys(profiles));
+    const pubkeys = Array.from(new Set(threads.map(t => t.pubkey).filter(p => !exists.has(p))));
 
-    if (!relayRef.current || pubkeys.length == 0) {
+    if (pubkeys.length == 0) {
       return;
     }
 
-    if (profileSubRef.current) {
-      profileSubRef.current.unsub();
-    }
+    // subscribeを始めたプロフィールについてはキーだけ作っておいて、スレッド更新時に重複取得しないように
+    const newProfiles = { ...profiles };
+    pubkeys.forEach(p => newProfiles[p] = null);
+    setProfiles(newProfiles);
 
-    profileSubRef.current = relayRef.current.sub([
+    const sub = relayRef.current.sub([
       { 
         kinds: [0],
         authors: pubkeys,
       },
     ]);
 
-    profileSubRef.current.on('event', event => {
+    sub.on('event', event => {
       setProfiles(prev => ({ ...prev, [event.pubkey]: JSON.parse(event.content) }));
     });
 
-    profileSubRef.current.on('eose', event => {
-      profileSubRef.current.unsub();
-      profileSubRef.current = null;
-    });
+    // NIP-15(https://github.com/nostr-protocol/nips/blob/master/15.md)に対応しているリレーなら、
+    // 現時点でフィルタにマッチするイベントを送り切った時点でEOSE通知を送ってくれる。
+    // このBBSではスレッドの変動に応じて都度プロフィールを取得しており、恒久的にsubscribeをする必要がないため、
+    // EOSEの時点でこれを終了する。
+    sub.on('eose', () => sub.unsub());
   }, [threads]);
 
   // スレッドの作成。
@@ -101,6 +104,7 @@ function ThreadList() {
         content: content,
       };
   
+      // Form側でNIP-07対応確認が取れているならそれを使って署名する
       if (useNIP07) {
         event = await window.nostr.signEvent(event);
       } else {
