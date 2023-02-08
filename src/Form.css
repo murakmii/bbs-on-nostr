@@ -39,3 +39,7 @@
 #Form table button {
   margin-left: 10px;
 }
+
+#Form input[type="checkbox"] {
+  margin-right: 6px;
+}

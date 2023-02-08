@@ -1,5 +1,6 @@
 import './Thread.css';
 import Form from './Form';
+import ReadableText from './ReadableText';
 import { useState, useEffect, useRef } from 'react';
 import { relayInit, nip19, getPublicKey, getEventHash, signEvent } from 'nostr-tools';
 import { useParams } from 'react-router-dom';
@@ -147,7 +148,7 @@ function Thread() {
               {thread.subject}<br/>
               <b>by {profiles[thread.pubkey] && profiles[thread.pubkey].display_name} created at {new Date(thread.createdAt * 1000).toLocaleString()}</b>
             </h3>
-            <p>{thread.content}</p>
+            <ReadableText>{thread.content}</ReadableText>
           </div>
         </div> 
       )}
@@ -165,7 +166,7 @@ function Thread() {
             
             <div className="Detail">
               <h4>{profiles[r.pubkey] && profiles[r.pubkey].display_name} at {new Date(r.createdAt * 1000).toLocaleString()}</h4>
-              <p>{r.content}</p>
+              <ReadableText>{r.content}</ReadableText>
             </div>
           </div>
         ))}
