@@ -175,6 +175,8 @@ function ThreadList() {
       };
   
       let pub = relayRef.current.publish(await window.nostr.signEvent(event));
+      setEmojiSelectingFor(null);
+      
       pub.on('ok', () => {
         console.log('emoji reaction succeeded!');
       });
