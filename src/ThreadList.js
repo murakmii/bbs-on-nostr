@@ -189,7 +189,7 @@ function ThreadList() {
   return (
     <div id="ThreadList">
       {emojiSelectingFor && (
-        <div id="EmojiSelector" onClick={() => setEmojiSelectingFor(null)}>
+        <div id="EmojiSelector" onClick={(e) => e.target.id == 'EmojiSelector' && setEmojiSelectingFor(null)}>
           <EmojiPicker onEmojiClick={reaction} />
         </div>
       )}
