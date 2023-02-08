@@ -13,6 +13,7 @@ function ThreadList() {
 
   const [at, setAt] = useState(new Date().getTime());
   const [threads, setThreads] = useState([]);
+  const [threadEOSE, setThreadEOSE] = useState(false);
   const [profiles, setProfiles] = useState({});
   const [emojiSelectingFor, setEmojiSelectingFor] = useState(null);
   const [reactions, setReactions] = useState({});
@@ -47,6 +48,9 @@ function ThreadList() {
             return newThreads.sort((a, b) => b.createdAt - a.createdAt);
           });
         });
+
+        // EOSEを待ってからプロフィール取得を開始したいので、EOSEの受信を記録しておく
+        threadSub.on('eose', () => setThreadEOSE(true));
 
         // リアクションを恒久的にsubscribeする
         // 今のところ、r-tagで絞り込みどのスレッドへのリアクションかはクライアント側で判定している
@@ -95,7 +99,9 @@ function ThreadList() {
     const exists = new Set(Object.keys(profiles));
     const pubkeys = Array.from(new Set(threads.map(t => t.pubkey).filter(p => !exists.has(p))));
 
-    if (pubkeys.length == 0) {
+    // プロフィール取得(REQ送信)を細かく刻むとどうも遅くなってしまうので、
+    // スレッド初回取得のEOSEまではプロフィール取得を行わず、EOSEが来た時点で一気に取得する
+    if (pubkeys.length == 0 || !threadEOSE) {
       return;
     }
 
@@ -120,7 +126,7 @@ function ThreadList() {
     // このBBSではスレッドの変動に応じて都度プロフィールを取得しており、恒久的にsubscribeをする必要がないため、
     // EOSEの時点でこれを終了する。
     sub.on('eose', () => sub.unsub());
-  }, [threads]);
+  }, [threads, threadEOSE]);
 
   // スレッドの作成。
   // この時作成されるノートにはスレッドのタイトルを設定したいので、
