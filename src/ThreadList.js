@@ -1,7 +1,7 @@
 import './ThreadList.css';
 import Form from './Form';
-import { NostrContext } from './App';
-import { useEffect, useState, useContext } from 'react';
+import { NostrContext, BBSContext } from './App';
+import { useState, useContext } from 'react';
 import { Link } from 'react-router-dom';
 import { nip19, getPublicKey, getEventHash, signEvent } from 'nostr-tools';
 import EmojiPicker from 'emoji-picker-react';
@@ -10,16 +10,13 @@ const bbsRootReference = 'https://bbs-on-nostr.murakmii.dev';
 
 function ThreadList() {
   const [at, setAt] = useState(new Date().getTime());
-  const [threads, setThreads] = useState([]);
-  const [threadEOSE, setThreadEOSE] = useState(false);
-  const [profiles, setProfiles] = useState({});
   const [emojiSelectingFor, setEmojiSelectingFor] = useState(null);
-  const [reactions, setReactions] = useState({});
 
   const { relay } = useContext(NostrContext);
+  const { threads, reactions, profiles } = useContext(BBSContext);
 
   // スレッドとリアクションのsubscribeを開始する
-  useEffect(() => {
+  /*useEffect(() => {
     // r-tag(https://github.com/nostr-protocol/nips/blob/master/12.md)に'https://bbs-on-nostr.murakmii.dev'を持つノートをスレッドとして扱う。
     // 以下ではその条件に該当するノートを返すようフィルターを設定しsubscribeしている(念のため1000件でフィルタ)
     const stopThread = relay.current.subscribe(
@@ -136,7 +133,7 @@ function ThreadList() {
         stop();
       },
     );
-  }, [threads, threadEOSE]);
+  }, [threads, threadEOSE]);*/
 
   // スレッドの作成。
   // この時作成されるノートにはスレッドのタイトルを設定したいので、

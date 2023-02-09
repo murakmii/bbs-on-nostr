@@ -64,37 +64,20 @@ export class MultiplexedRelays {
     )));
   }
 
-  // 呼び出し時点でリレーサーバ上に存在するイベントのみを取得する
-  // (全サーバーがEOSEを返した時点で履行されるPromiseを返す)
-  fetch(filter) {
-    const events = {};
-    const allEOSE = this.activeRelays.map(r => (
-      new Promise(resolve => {
-        const sub = r.sub([filter]);
-
-        sub.on('event', (event) => events[event.id] = { event, relayURL: r.url });
-        sub.on('eose', () => {
-          sub.unsub();
-          resolve();
-        });
-      })
-    ));
-
-    return new Promise(resolve => Promise.all(allEOSE).then(() => resolve(Object.values(events))));
-  }
-
   // 戻り値の関数を呼び出し停止するまで行われるsubscribeを実行する。
   // イベント受信時にはhandleEventが、全リレーサーバーでEOSEが返却された時点でhandleEOSEが呼び出される。
   // リレーサーバーによってEOSEが返されるタイミングはまちまちであるため、handleEOSEが呼び出されるよりも前に、
   // 一部サーバーのEOSE後のイベントがhandleEventに渡される可能性がある点に留意する。
-  subscribe(filter, handleEvent, handleEOSE) {
+  subscribe(filters, handleEvent, handleEOSE) {
     const receivedIDs = new Set();
     const subscriptions = [];
     const stop = () => subscriptions.forEach(sub => sub.unsub());
     const allEOSE = [];
 
     this.activeRelays.forEach(r => {
-      const sub = r.sub([filter]);
+      console.info(`start subscription for ${r.url}`, filters);
+
+      const sub = r.sub(filters);
       subscriptions.push(sub);
 
       sub.on('event', (event) => {

@@ -1,7 +1,7 @@
 import './Thread.css';
 import Form from './Form';
 import ReadableText from './ReadableText';
-import { NostrContext } from './App';
+import { NostrContext, BBSContext } from './App';
 import { useState, useEffect, useContext } from 'react';
 import { nip19, getPublicKey, getEventHash, signEvent } from 'nostr-tools';
 import { useParams } from 'react-router-dom';
@@ -11,17 +11,64 @@ const bbsRootReference = 'https://bbs-on-nostr.murakmii.dev';
 function Thread() {
   const [thread, setThread] = useState(null);
   const [replies, setReplies] = useState([]);
-  const [replyEOSE, setReplyEOSE] = useState(false);
-  const [profiles, setProfiles] = useState({});
+  const [eose, setEOSE] = useState(false);
   const [at, setAt] = useState(new Date().getTime());
 
   const { id } = useParams();
   const { relay } = useContext(NostrContext);
+  const { profiles, profilesDispatch } = useContext(BBSContext);
+
+  const receiveThread = (event, relayURL) => {
+    setThread({
+      id: event.id,
+      pubkey: event.pubkey, 
+      createdAt: event.created_at,
+      content: event.content,
+      subject: event.tags.filter(t => t[0] == 'subject').map(t => t[1])[0] || 'No title',
+      relayURL,
+    });
+  };
+
+  const receiveReply = (event) => {
+    setReplies(prevReplies => {
+      const newReplies = prevReplies.concat({
+        id: event.id,
+        pubkey: event.pubkey, 
+        createdAt: event.created_at,
+        content: event.content,
+      });
+      return newReplies.sort((a, b) => b.createdAt - a.createdAt);
+    });
+  };
+
+  useEffect(() => relay.current.subscribe(
+    [
+      {
+        ids: [id],
+        kinds: [1],
+        '#r': [bbsRootReference],
+        limit: 1,
+      },
+      {
+        kinds: [1], 
+        '#e': [id],
+        limit: 1000, 
+      }
+    ],
+    (event, relayURL) => {
+      if (event.id === id && event.tags.find(t => t[0] === 'r' && t[1] === bbsRootReference)) {
+        receiveThread(event, relayURL);
+      } else {
+        receiveReply(event);
+      }
+    },
+    () => setEOSE(true),
+  ), []);
 
   // 始めにスレッド情報を取得する。
   // URLのパスからイベントのIDは分かるため、スレッド一覧と同様の絞り込みに加えIDも指定して取得する。
   // イベントが送信されないままEOSE通知が来た場合404であると判断できるが、実装していない。
-  useEffect(() => relay.current.subscribe(
+  /*useEffect(() => relay.current.subscribe(
     {
       ids: [id],
       kinds: [1],
@@ -72,7 +119,7 @@ function Thread() {
       },
       () => setReplyEOSE(true),
     );
-  }, [thread]);
+  }, [thread]);*/
 
   // スレッド或いはリプライ一覧の変動に応じてプロフィール情報を取得する
   // この辺の処理はスレッド一覧の場合と同様。
@@ -80,39 +127,27 @@ function Thread() {
     const exists = new Set(Object.keys(profiles));
     const pubkeys = replies.map(r => r.pubkey).concat(thread ? [thread.pubkey] : []).filter(p => !exists.has(p));
 
-    if (pubkeys.length == 0 || !replyEOSE) {
+    if (!thread || pubkeys.length == 0 || !eose) {
       return;
     }
 
-    const newProfiles = { ...profiles };
-    pubkeys.forEach(p => newProfiles[p] = null);
-    setProfiles(newProfiles);
+    profilesDispatch({ type: 'RECEIVING', pubkeys });
 
-    const receivingProfiles = {};
+    const events = [];
     relay.current.subscribe(
-      { 
-        kinds: [0],
-        authors: pubkeys,
-      },
-      (event) => {
-        if (!receivingProfiles[event.pubkey]) {
-          receivingProfiles[event.pubkey] = [];
-        }
-        receivingProfiles[event.pubkey].push({ ...JSON.parse(event.content), created_at: event.created_at });
-      },
+      [
+        { 
+          kinds: [0],
+          authors: pubkeys,
+        },
+      ],
+      (event) => events.push(event),
       (stop) => {
-        const addedProfiles = {};
-        Object.keys(receivingProfiles).forEach(pubkey => {
-          addedProfiles[pubkey] = receivingProfiles[pubkey]
-            .sort((a, b) => a.created_at - b.created_at)
-            .reduce((a, b) => Object.assign(a, b));
-        });
-
-        setProfiles(prev => ({ ...prev, ...addedProfiles }))
+        profilesDispatch({ type: 'RECEIVED', events });
         stop();
       },
     );
-  }, [thread, replies, replyEOSE]);
+  }, [thread, replies, eose]);
 
   const createReply = ({ content, encodedPrivKey, useNIP07 }) => {
     (async () => {
