@@ -103,7 +103,7 @@ export class MultiplexedRelays {
         }
 
         receivedIDs.add(event.id);
-        handleEvent(event, r.url);
+        handleEvent(event, r.url, stop);
       });
       allEOSE.push(new Promise((resolve => sub.on('eose', resolve))));
     });

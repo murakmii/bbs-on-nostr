@@ -1,17 +1,14 @@
 import './ThreadList.css';
 import Form from './Form';
 import { NostrContext } from './App';
-import { useEffect, useRef, useState, useContext } from 'react';
+import { useEffect, useState, useContext } from 'react';
 import { Link } from 'react-router-dom';
 import { nip19, getPublicKey, getEventHash, signEvent } from 'nostr-tools';
 import EmojiPicker from 'emoji-picker-react';
 
-const bbsRelayURL = 'wss://nostr-pub.wellorder.net';
 const bbsRootReference = 'https://bbs-on-nostr.murakmii.dev';
 
 function ThreadList() {
-  const relayRef = useRef();
-
   const [at, setAt] = useState(new Date().getTime());
   const [threads, setThreads] = useState([]);
   const [threadEOSE, setThreadEOSE] = useState(false);

@@ -1,59 +1,49 @@
 import './Thread.css';
 import Form from './Form';
 import ReadableText from './ReadableText';
-import { useState, useEffect, useRef } from 'react';
-import { relayInit, nip19, getPublicKey, getEventHash, signEvent } from 'nostr-tools';
+import { NostrContext } from './App';
+import { useState, useEffect, useContext } from 'react';
+import { nip19, getPublicKey, getEventHash, signEvent } from 'nostr-tools';
 import { useParams } from 'react-router-dom';
 
-const bbsRelayURL = 'wss://nostr-pub.wellorder.net';
 const bbsRootReference = 'https://bbs-on-nostr.murakmii.dev';
 
 function Thread() {
-  const relayRef = useRef();
-
   const [thread, setThread] = useState(null);
   const [replies, setReplies] = useState([]);
+  const [replyEOSE, setReplyEOSE] = useState(false);
   const [profiles, setProfiles] = useState({});
   const [at, setAt] = useState(new Date().getTime());
 
   const { id } = useParams();
+  const { relay } = useContext(NostrContext);
 
   // 始めにスレッド情報を取得する。
   // URLのパスからイベントのIDは分かるため、スレッド一覧と同様の絞り込みに加えIDも指定して取得する。
   // イベントが送信されないままEOSE通知が来た場合404であると判断できるが、実装していない。
-  useEffect(() => {
-    (async () => {
-      try {
-        relayRef.current = relayInit(bbsRelayURL);
-        await relayRef.current.connect();
+  useEffect(() => relay.current.subscribe(
+    {
+      ids: [id],
+      kinds: [1],
+      '#r': [bbsRootReference],
+      limit: 1,
+    },
+    (event, relayURL, stop) => {
+      console.log('receive thread from ' + relayURL);
+      setThread({
+        id: event.id,
+        pubkey: event.pubkey, 
+        createdAt: event.created_at,
+        content: event.content,
+        subject: event.tags.filter(t => t[0] == 'subject').map(t => t[1])[0] || 'No title',
+        relayURL,
+      });
 
-        const thread = relayRef.current.sub([
-          {
-            ids: [id],
-            kinds: [1],
-            '#r': [bbsRootReference],
-            limit: 1,
-          }
-        ]);
-
-        thread.on('event', event => {
-          setThread({
-            id: event.id,
-            pubkey: event.pubkey, 
-            createdAt: event.created_at,
-            content: event.content,
-            subject: event.tags.filter(t => t[0] == 'subject').map(t => t[1])[0] || 'No title',
-          });
-
-          thread.unsub();
-        });
-      } catch (e) {
-        window.alert('スレッド情報取得中にエラーが発生しました。ネットワークの調子が悪いかも?');
-      }
-    })();
-
-    return () => relayRef.current.close();
-  }, []);
+      // 複数サーバーからスレッド情報が送られてくることが考えられるが、
+      // IDが同じなら内容も同じなので1つ受信できた段階でsubscribeをやめる
+      stop();
+    },
+  ), []);
 
   // スレッドが取得できたならリプライ一覧を取得する。
   // リプライはSNS用クライアント向けの仕様と同様、
@@ -63,25 +53,25 @@ function Thread() {
       return;
     }
 
-    const replies = relayRef.current.sub([
+    return relay.current.subscribe(
       {
         kinds: [1], 
         '#e': [thread.id],
         limit: 1000, 
-      }
-    ]);
-
-    replies.on('event', event => {
-      setReplies(prevReplies => {
-        const newReplies = prevReplies.concat({
-          id: event.id,
-          pubkey: event.pubkey, 
-          createdAt: event.created_at,
-          content: event.content,
+      },
+      (event) => {
+        setReplies(prevReplies => {
+          const newReplies = prevReplies.concat({
+            id: event.id,
+            pubkey: event.pubkey, 
+            createdAt: event.created_at,
+            content: event.content,
+          });
+          return newReplies.sort((a, b) => b.createdAt - a.createdAt);
         });
-        return newReplies.sort((a, b) => b.createdAt - a.createdAt);
-      });
-    });
+      },
+      () => setReplyEOSE(true),
+    );
   }, [thread]);
 
   // スレッド或いはリプライ一覧の変動に応じてプロフィール情報を取得する
@@ -90,31 +80,46 @@ function Thread() {
     const exists = new Set(Object.keys(profiles));
     const pubkeys = replies.map(r => r.pubkey).concat(thread ? [thread.pubkey] : []).filter(p => !exists.has(p));
 
+    if (pubkeys.length == 0 || !replyEOSE) {
+      return;
+    }
+
     const newProfiles = { ...profiles };
     pubkeys.forEach(p => newProfiles[p] = null);
     setProfiles(newProfiles);
 
-    const sub = relayRef.current.sub([
-      {
+    const receivingProfiles = {};
+    relay.current.subscribe(
+      { 
         kinds: [0],
         authors: pubkeys,
-      }
-    ]);
+      },
+      (event) => {
+        if (!receivingProfiles[event.pubkey]) {
+          receivingProfiles[event.pubkey] = [];
+        }
+        receivingProfiles[event.pubkey].push({ ...JSON.parse(event.content), created_at: event.created_at });
+      },
+      (stop) => {
+        const addedProfiles = {};
+        Object.keys(receivingProfiles).forEach(pubkey => {
+          addedProfiles[pubkey] = receivingProfiles[pubkey]
+            .sort((a, b) => a.created_at - b.created_at)
+            .reduce((a, b) => Object.assign(a, b));
+        });
 
-    sub.on('event', (event) => {
-      setProfiles(prev => ({ ...prev, [event.pubkey]: JSON.parse(event.content) }));
-    });
-
-    sub.on('eose', () => sub.unsub());
-
-  }, [thread, replies]);
+        setProfiles(prev => ({ ...prev, ...addedProfiles }))
+        stop();
+      },
+    );
+  }, [thread, replies, replyEOSE]);
 
   const createReply = ({ content, encodedPrivKey, useNIP07 }) => {
     (async () => {
       let event = {
         kind: 1,
         created_at: Math.floor(Date.now() / 1000),
-        tags: [['e', thread.id, bbsRelayURL]],
+        tags: [['e', thread.id, thread.relayURL]],
         content: content,
       };
 
@@ -127,14 +132,14 @@ function Thread() {
         event.sig = signEvent(event, privkey);
       }      
 
-      let pub = relayRef.current.publish(event);
-      pub.on('ok', () => {
-        window.alert('返信しました！');
-        setAt(new Date().getTime());
-      });
-      pub.on('failed', reason => {
-        window.alert(`返信に失敗しました...(${reason})`);
-      });
+      relay.current.publish(event)
+        .then(() => {
+          window.alert('返信しました！');
+          setAt(new Date().getTime());
+        })
+        .catch(() => {
+          window.alert(`返信に失敗しました...`);
+        });
     })();
   };
 
