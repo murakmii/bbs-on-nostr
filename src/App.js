@@ -13,13 +13,15 @@ function profilesReducer(state, action) {
   let newState = state;
 
   switch (action.type) {
+    // 受信中のプロフィールを重複してsubscribeしないよう、先にキーだけ登録しておく
     case 'RECEIVING':
       newState = { ...state };
       action.pubkeys.forEach(p => newState[p] = null);
       break;
 
+    // 受信したkind: 0なイベントによるプロフィールの追加
     case 'RECEIVED':
-      // pubkeyにつき複数のプロフィールがある可能性があるため、まずはpubkey毎にまとめる
+      // pubkeyにつき複数のイベントがある可能性があるため、まずはpubkey毎にまとめる
       const eachPubKeys = {}
       action.events.forEach(e => {
         if (!eachPubKeys[e.pubkey]) {
@@ -106,12 +108,13 @@ function App() {
     });  
   };
 
-  // スレッドとリアクションのためのsubscriptionを立ち上げる
-  // 
+  // スレッドとリアクションのためのsubscriptionを立ち上げる。
+  // r-tag(https://github.com/nostr-protocol/nips/blob/master/12.md)に'https://bbs-on-nostr.murakmii.dev'を持つノートをスレッドとして扱う。
+  // リアクションについては、今のところ、r-tagで絞り込みどのスレッドへのリアクションかはクライアント側で判定している。
+  // subscriptionには複数のフィルタを設定できるため、1つのsubscriptionで両方を取得しコールバック内でどちらかを判断していく。
   useEffect(() => {
     let stop = null;
     (async () => {
-
       await relayRef.current.connect();
       setConnected(true);
 
@@ -145,6 +148,9 @@ function App() {
     };
   }, []);
 
+  // スレッド作成者情報の増加に応じたのプロフィール取得の取得。
+  // 初回はEOSEにより全スレッド情報が送信されるまで待ってから1度に取得する。
+  // (そうしないとsubscriptionが増えすぎる)
   useEffect(() => {
     // 未取得のプロフィールのみ取得
     const exists = new Set(Object.keys(profiles));
@@ -156,8 +162,6 @@ function App() {
 
     profilesDispatch({ type: 'RECEIVING', pubkeys });
 
-    // 複数サーバーから取得すると複数のプロフィールが見つかるかもしれないので、
-    // 一旦全てpubkeyをキーに配列にまとめる。
     const events = [];
     relayRef.current.subscribe(
       [
@@ -181,7 +185,7 @@ function App() {
       <p>
         Nostr上に実験的に実装されたBBSです:
         <a href="https://github.com/murakmii/bbs-on-nostr" target="_blank" rel="noreferrer">https://github.com/murakmii/bbs-on-nostr</a><br />
-        リレーは nostr-pub.wellorder.net のみを使用させていただいています。<br />
+        リレーは nostr-pub.wellorder.net, relay.snort.social を使用させていただいています。<br />
         不安な人は捨て垢でやるか、拡張機能を入れるといいよ(Emoji Reactionは拡張機能限定)。
       </p>
       {connected && (

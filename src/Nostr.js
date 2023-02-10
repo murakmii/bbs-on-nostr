@@ -71,16 +71,22 @@ export class MultiplexedRelays {
   subscribe(filters, handleEvent, handleEOSE) {
     const receivedIDs = new Set();
     const subscriptions = [];
-    const stop = () => subscriptions.forEach(sub => sub.unsub());
     const allEOSE = [];
 
+    const stop = () => subscriptions.forEach(s => {
+      s.sub.unsub();
+      console.info(`close subscription for ${s.relayURL}`);
+    });
+
     this.activeRelays.forEach(r => {
+      const sub = r.sub(filters);
+      subscriptions.push({sub, relayURL: r.url});
+
       console.info(`start subscription for ${r.url}`, filters);
 
-      const sub = r.sub(filters);
-      subscriptions.push(sub);
-
       sub.on('event', (event) => {
+        // 複数のリレーサーバーから重複してイベントを受信した場合は後続を無視する。
+        // SetにイベントIDがたまり続けるが、掲示板程度であれば問題ないと判断。
         if (receivedIDs.has(event.id)) {
           return;
         }

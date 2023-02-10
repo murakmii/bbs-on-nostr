@@ -41,6 +41,10 @@ function Thread() {
     });
   };
 
+  // URLパスパラメータ中のIDで指定されるスレッド情報及びリプライ一覧を1つのsubscription内で取得する。
+  // スレッド情報が受信されないままEOSEが受信された場合は404と判断できるが実装してない。
+  // リプライはSNS用クライアント向けの仕様と同様、
+  // 単にスレッドの元となっているイベントをe-tagで参照するテキストノートとしている。
   useEffect(() => relay.current.subscribe(
     [
       {
@@ -64,62 +68,6 @@ function Thread() {
     },
     () => setEOSE(true),
   ), []);
-
-  // 始めにスレッド情報を取得する。
-  // URLのパスからイベントのIDは分かるため、スレッド一覧と同様の絞り込みに加えIDも指定して取得する。
-  // イベントが送信されないままEOSE通知が来た場合404であると判断できるが、実装していない。
-  /*useEffect(() => relay.current.subscribe(
-    {
-      ids: [id],
-      kinds: [1],
-      '#r': [bbsRootReference],
-      limit: 1,
-    },
-    (event, relayURL, stop) => {
-      console.log('receive thread from ' + relayURL);
-      setThread({
-        id: event.id,
-        pubkey: event.pubkey, 
-        createdAt: event.created_at,
-        content: event.content,
-        subject: event.tags.filter(t => t[0] == 'subject').map(t => t[1])[0] || 'No title',
-        relayURL,
-      });
-
-      // 複数サーバーからスレッド情報が送られてくることが考えられるが、
-      // IDが同じなら内容も同じなので1つ受信できた段階でsubscribeをやめる
-      stop();
-    },
-  ), []);
-
-  // スレッドが取得できたならリプライ一覧を取得する。
-  // リプライはSNS用クライアント向けの仕様と同様、
-  // 単にスレッドの元となっているイベントをe-tagで参照するテキストノートとしている。
-  useEffect(() => {
-    if (!thread) {
-      return;
-    }
-
-    return relay.current.subscribe(
-      {
-        kinds: [1], 
-        '#e': [thread.id],
-        limit: 1000, 
-      },
-      (event) => {
-        setReplies(prevReplies => {
-          const newReplies = prevReplies.concat({
-            id: event.id,
-            pubkey: event.pubkey, 
-            createdAt: event.created_at,
-            content: event.content,
-          });
-          return newReplies.sort((a, b) => b.createdAt - a.createdAt);
-        });
-      },
-      () => setReplyEOSE(true),
-    );
-  }, [thread]);*/
 
   // スレッド或いはリプライ一覧の変動に応じてプロフィール情報を取得する
   // この辺の処理はスレッド一覧の場合と同様。
@@ -149,6 +97,8 @@ function Thread() {
     );
   }, [thread, replies, eose]);
 
+  // 返信作成。スレッドの作成とやることはほぼ同様。
+  // e-tagでスレッドのイベントを参照し関連付けを行う。
   const createReply = ({ content, encodedPrivKey, useNIP07 }) => {
     (async () => {
       let event = {
