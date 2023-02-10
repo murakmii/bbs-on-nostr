@@ -5,8 +5,7 @@ import { NostrContext, BBSContext } from './App';
 import { useState, useEffect, useContext } from 'react';
 import { nip19, getPublicKey, getEventHash, signEvent } from 'nostr-tools';
 import { useParams } from 'react-router-dom';
-
-const bbsRootReference = 'https://bbs-on-nostr.murakmii.dev';
+import { bbsRootReference } from './Nostr';
 
 function Thread() {
   const [thread, setThread] = useState(null);

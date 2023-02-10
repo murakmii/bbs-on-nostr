@@ -1,26 +1,35 @@
 import './Form.css';
 import Button from './Button';
-import { useState } from 'react';
+import { NostrContext } from './App';
+import { enableNIP07 } from './Nostr';
+import { useState, useEffect, useContext } from 'react';
+import { nip19 } from 'nostr-tools';
 
 function Form({ forThread, onSubmit }) {
   const [validInput, setValidInput] = useState(false);
-  const [useNIP07, setUseNIP07] = useState(false);
+  const {pubKey, setPubKey} = useContext(NostrContext);
 
-  // NIP-07(https://github.com/nostr-protocol/nips/blob/master/07.md)対応状況を確認し、
-  // 可能であれば「NIP-07対応機能で署名する」チェックボックスを有効にする。
-  // といっても単にwindowオブジェクトに所定のプロパティがあるかどうかを確認するだけ。
-  const enableNIP07 = window.nostr && window.nostr.signEvent;
+  // 公開鍵の取得の可否でBBSでNIP-07を使用するかどうかを決定する
+  // 拒否された場合は拡張未導入と同様の振る舞いとする(秘密鍵手入力)
+  useEffect(() => {
+    if (enableNIP07() && pubKey === null) {
+      window.nostr.getPublicKey()
+        .then(setPubKey)
+        .catch(() => setPubKey(prev => prev === null ? '' : prev));
+    }
+  }, []);
 
   const validate = () => {
     const subject = forThread && document.form.subject.value;
     const content = document.form.content.value;
-    const privkey = document.form.privkey.value;
+    const privkey = document.form.privkey ? document.form.privkey.value : '';
+    const useNIP07 = enableNIP07() && pubKey.length > 0;
     
     return (
       (!forThread || (subject.length > 0 && subject.length < 100 && !subject.includes('nsec'))) &&
       content.length > 0 && content.length < 1000 && !content.includes('nsec') &&
-      (document.form.useNIP07.checked || privkey.length > 0) &&
-      document.form.tos.checked
+      document.form.tos.checked &&
+      (useNIP07 || (privkey.length > 0))
     );
   };
 
@@ -30,18 +39,45 @@ function Form({ forThread, onSubmit }) {
     onSubmit({
       subject: forThread && document.form.subject.value,
       content: document.form.content.value,
-      encodedPrivKey: document.form.privkey.value,
-      useNIP07: document.form.useNIP07.checked,
+      encodedPrivKey: document.form.privkey && document.form.privkey.value,
+      useNIP07: enableNIP07() && pubKey.length > 0,
     });
   };
 
-  const onChangeUseNIP07 = (e) => {
-    setUseNIP07(e.target.checked);
-    if (e.target.checked) {
-      document.form.privkey.value = '';
+  let keyForm = null;
+  if (!enableNIP07() || pubKey === '') {
+    keyForm = (
+      <>
+        <th>秘密鍵</th>
+        <td>
+          <input type="text" name="privkey" placeholder="nsecXXX..." onChange={() => setValidInput(validate())} />
+          <p className="PrivKeyWarn">
+            <a href="https://github.com/nostr-protocol/nips/blob/master/07.md#implementation" target="_blank" rel="noreferrer">拡張機能</a>を導入することで秘密鍵の入力を避け、
+            より安全にBBSやその他Nostr関連サービスを利用することができるようになります！この機会に導入してみませんか？
+          </p>
+        </td>
+      </>
+    );
+  } else if (enableNIP07()) {
+    if (pubKey === null) {
+      keyForm = (
+        <>
+          <td></td>
+          <td className="checkingNIP07">NIP-07 パーミッション確認中...</td>
+        </>
+      );
+    } else {
+      keyForm = (
+        <>
+          <td></td>
+          <td className="useNIP07">
+            あなたの認証情報はNIP-07で保護されています！<br />
+            ✅ <span>{nip19.npubEncode(pubKey)}</span>
+          </td>
+        </>
+      );
     }
-    setValidInput(validate());
-  };
+  }
 
   return (
     <form id="Form" name="form" onSubmit={() => false}>
@@ -64,12 +100,7 @@ function Form({ forThread, onSubmit }) {
             </td>
           </tr>
           <tr>
-            <th>秘密鍵</th>
-            <td>
-              <input type="text" name="privkey" placeholder="nsecXXX..." onChange={() => setValidInput(validate())} disabled={useNIP07} /><br />
-              <input type="checkbox" disabled={!enableNIP07} name="useNIP07" id="UseNIP07" onChange={onChangeUseNIP07} />
-              <label htmlFor="UseNIP07">{'NIP-07対応機能で署名する' + (enableNIP07 ? '' : ' - このブラウザには拡張機能が導入されていません')}</label>
-            </td>
+            {keyForm}
           </tr>
           <tr>
             <td colSpan="2">

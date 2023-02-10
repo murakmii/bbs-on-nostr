@@ -7,6 +7,7 @@
 
 #Form table {
   width: 100%;
+  border-spacing: 10px;
 }
 
 #Form table th {
@@ -26,7 +27,6 @@
   width: 100%;
   box-sizing: border-box;
   padding: 4px;
-  margin-bottom: 10px;
   border: solid 1px gray;
 }
 
@@ -34,6 +34,37 @@
   height: 150px;
   font-size: 1.1em;
   resize: none;
+}
+
+#Form .checkingNIP07 {
+  padding: 15px;
+  font-weight: bold;
+  color: #bd2ebd;
+  border: dashed 3px #bd2ebd;
+  text-align: center;
+}
+
+#Form .useNIP07 {
+  color: #525252;
+  text-align: center;
+  line-height: 1.5;
+  padding: 10px;
+  border: solid 3px #46c14b;
+}
+
+#Form .useNIP07 span {
+  font-size: 1em;
+  font-weight: bold;
+  color: #46c14b;
+}
+
+#Form .PrivKeyWarn {
+  color: #525252;
+  text-align: center;
+  line-height: 1.5;
+  padding: 10px;
+  border: solid 3px orange;
+  margin-top: 8px;
 }
 
 #Form table button {

@@ -2,12 +2,13 @@ import './App.css';
 import ThreadList from './ThreadList';
 import { useOutlet, Link } from 'react-router-dom';
 import { useRef, useEffect, useState, createContext, useReducer } from 'react';
-import { MultiplexedRelays } from './Nostr';
+import { 
+  bbsRootReference,
+  MultiplexedRelays
+} from './Nostr';
 
 export const NostrContext = createContext();
 export const BBSContext = createContext();
-
-const bbsRootReference = 'https://bbs-on-nostr.murakmii.dev';
 
 function profilesReducer(state, action) {
   let newState = state;
@@ -63,6 +64,7 @@ function App() {
   const [eose, setEOSE] = useState(false);
 
   const [profiles, profilesDispatch] = useReducer(profilesReducer, {});
+  const [pubKey, setPubKey] = useState(null);
   
   // 受信したスレッドを保持
   const receiveThread = (event, relayURL) => {
@@ -186,10 +188,10 @@ function App() {
         Nostr上に実験的に実装されたBBSです:
         <a href="https://github.com/murakmii/bbs-on-nostr" target="_blank" rel="noreferrer">https://github.com/murakmii/bbs-on-nostr</a><br />
         リレーは nostr-pub.wellorder.net, relay.snort.social を使用させていただいています。<br />
-        不安な人は捨て垢でやるか、拡張機能を入れるといいよ(Emoji Reactionは拡張機能限定)。
+        認証情報を安全に扱うための<a href="https://github.com/nostr-protocol/nips/blob/master/07.md#implementation" target="_blank" rel="noreferrer">NIP-07対応のブラウザ拡張</a>の導入を推奨しています。
       </p>
       {connected && (
-        <NostrContext.Provider value={{relay: relayRef}}>
+        <NostrContext.Provider value={{relay: relayRef, pubKey, setPubKey}}>
           <BBSContext.Provider value={{ threads, reactions, profiles, profilesDispatch}}>
             <div id="Main">
               {child || <ThreadList />}
