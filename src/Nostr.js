@@ -54,14 +54,18 @@ export class MultiplexedRelays {
 
   // 一連のリレーサーバーへイベントを送信し、1件でも送信できたなら履行されるPromiseを返す
   publish(event) {
-    return Promise.any(this.activeRelays.map(r => (
-      new Promise((resolve, reject) => {
+    return Promise.any(this.activeRelays.map(r => {
+      console.log(`publish event to ${r.url}`);
+      return new Promise((resolve, reject) => {
         const pub = r.publish(event);
         pub.on('ok', resolve);
         pub.on('seen', resolve);
-        pub.on('failed', reject);
-      })
-    )));
+        pub.on('failed', (reason) => {
+          console.warn(`failed to publish event to ${r.url}: ${reason}`);
+          reject();
+        });
+      });
+    }));
   }
 
   // 戻り値の関数を呼び出し停止するまで行われるsubscribeを実行する。
