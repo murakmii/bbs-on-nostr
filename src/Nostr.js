@@ -1,5 +1,11 @@
 import { relayInit } from 'nostr-tools';
 
+export const bbsRootReference = 'https://bbs-on-nostr.murakmii.dev';
+
+// NIP-07(https://github.com/nostr-protocol/nips/blob/master/07.md)対応状況を確認する。
+// 確認といってもwindowオブジェクトのプロパティを確認するだけ。
+export const enableNIP07 = () => window.nostr && window.nostr.getPublicKey && window.nostr.signEvent;
+
 // リレーサーバーに接続する。
 // 接続に成功した場合は履行値としてRelay、
 // 失敗した場合は拒否理由として接続先URLを返すようなPromiseを返す。

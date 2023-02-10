@@ -5,8 +5,7 @@ import { useState, useContext } from 'react';
 import { Link } from 'react-router-dom';
 import { nip19, getPublicKey, getEventHash, signEvent } from 'nostr-tools';
 import EmojiPicker from 'emoji-picker-react';
-
-const bbsRootReference = 'https://bbs-on-nostr.murakmii.dev';
+import { bbsRootReference } from './Nostr';
 
 function ThreadList() {
   const [at, setAt] = useState(new Date().getTime());
