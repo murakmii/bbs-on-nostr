@@ -27,6 +27,7 @@ Nostrにおけるクライアントは、接続先リレーサーバーに対し
 
 ## 実装について
 
+* `src/Nostr.js`
 * `src/ThreadList.js`
 * `src/Thread.js`
 * `src/Form.js`(NIP-07対応確認のみ)

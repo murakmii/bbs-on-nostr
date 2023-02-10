@@ -1,88 +1,73 @@
 import './Thread.css';
 import Form from './Form';
 import ReadableText from './ReadableText';
-import { useState, useEffect, useRef } from 'react';
-import { relayInit, nip19, getPublicKey, getEventHash, signEvent } from 'nostr-tools';
+import { NostrContext, BBSContext } from './App';
+import { useState, useEffect, useContext } from 'react';
+import { nip19, getPublicKey, getEventHash, signEvent } from 'nostr-tools';
 import { useParams } from 'react-router-dom';
 
-const bbsRelayURL = 'wss://nostr-pub.wellorder.net';
 const bbsRootReference = 'https://bbs-on-nostr.murakmii.dev';
 
 function Thread() {
-  const relayRef = useRef();
-
   const [thread, setThread] = useState(null);
   const [replies, setReplies] = useState([]);
-  const [profiles, setProfiles] = useState({});
+  const [eose, setEOSE] = useState(false);
   const [at, setAt] = useState(new Date().getTime());
 
   const { id } = useParams();
+  const { relay } = useContext(NostrContext);
+  const { profiles, profilesDispatch } = useContext(BBSContext);
 
-  // 始めにスレッド情報を取得する。
-  // URLのパスからイベントのIDは分かるため、スレッド一覧と同様の絞り込みに加えIDも指定して取得する。
-  // イベントが送信されないままEOSE通知が来た場合404であると判断できるが、実装していない。
-  useEffect(() => {
-    (async () => {
-      try {
-        relayRef.current = relayInit(bbsRelayURL);
-        await relayRef.current.connect();
+  const receiveThread = (event, relayURL) => {
+    setThread({
+      id: event.id,
+      pubkey: event.pubkey, 
+      createdAt: event.created_at,
+      content: event.content,
+      subject: event.tags.filter(t => t[0] == 'subject').map(t => t[1])[0] || 'No title',
+      relayURL,
+    });
+  };
 
-        const thread = relayRef.current.sub([
-          {
-            ids: [id],
-            kinds: [1],
-            '#r': [bbsRootReference],
-            limit: 1,
-          }
-        ]);
+  const receiveReply = (event) => {
+    setReplies(prevReplies => {
+      const newReplies = prevReplies.concat({
+        id: event.id,
+        pubkey: event.pubkey, 
+        createdAt: event.created_at,
+        content: event.content,
+      });
+      return newReplies.sort((a, b) => b.createdAt - a.createdAt);
+    });
+  };
 
-        thread.on('event', event => {
-          setThread({
-            id: event.id,
-            pubkey: event.pubkey, 
-            createdAt: event.created_at,
-            content: event.content,
-            subject: event.tags.filter(t => t[0] == 'subject').map(t => t[1])[0] || 'No title',
-          });
-
-          thread.unsub();
-        });
-      } catch (e) {
-        window.alert('スレッド情報取得中にエラーが発生しました。ネットワークの調子が悪いかも?');
-      }
-    })();
-
-    return () => relayRef.current.close();
-  }, []);
-
-  // スレッドが取得できたならリプライ一覧を取得する。
+  // URLパスパラメータ中のIDで指定されるスレッド情報及びリプライ一覧を1つのsubscription内で取得する。
+  // スレッド情報が受信されないままEOSEが受信された場合は404と判断できるが実装してない。
   // リプライはSNS用クライアント向けの仕様と同様、
   // 単にスレッドの元となっているイベントをe-tagで参照するテキストノートとしている。
-  useEffect(() => {
-    if (!thread) {
-      return;
-    }
-
-    const replies = relayRef.current.sub([
+  useEffect(() => relay.current.subscribe(
+    [
+      {
+        ids: [id],
+        kinds: [1],
+        '#r': [bbsRootReference],
+        limit: 1,
+      },
       {
         kinds: [1], 
-        '#e': [thread.id],
+        '#e': [id],
         limit: 1000, 
       }
-    ]);
-
-    replies.on('event', event => {
-      setReplies(prevReplies => {
-        const newReplies = prevReplies.concat({
-          id: event.id,
-          pubkey: event.pubkey, 
-          createdAt: event.created_at,
-          content: event.content,
-        });
-        return newReplies.sort((a, b) => b.createdAt - a.createdAt);
-      });
-    });
-  }, [thread]);
+    ],
+    (event, relayURL) => {
+      if (event.id === id && event.tags.find(t => t[0] === 'r' && t[1] === bbsRootReference)) {
+        receiveThread(event, relayURL);
+      } else {
+        receiveReply(event);
+      }
+    },
+    () => setEOSE(true),
+  ), []);
 
   // スレッド或いはリプライ一覧の変動に応じてプロフィール情報を取得する
   // この辺の処理はスレッド一覧の場合と同様。
@@ -90,31 +75,36 @@ function Thread() {
     const exists = new Set(Object.keys(profiles));
     const pubkeys = replies.map(r => r.pubkey).concat(thread ? [thread.pubkey] : []).filter(p => !exists.has(p));
 
-    const newProfiles = { ...profiles };
-    pubkeys.forEach(p => newProfiles[p] = null);
-    setProfiles(newProfiles);
+    if (!thread || pubkeys.length == 0 || !eose) {
+      return;
+    }
 
-    const sub = relayRef.current.sub([
-      {
-        kinds: [0],
-        authors: pubkeys,
-      }
-    ]);
+    profilesDispatch({ type: 'RECEIVING', pubkeys });
 
-    sub.on('event', (event) => {
-      setProfiles(prev => ({ ...prev, [event.pubkey]: JSON.parse(event.content) }));
-    });
+    const events = [];
+    relay.current.subscribe(
+      [
+        { 
+          kinds: [0],
+          authors: pubkeys,
+        },
+      ],
+      (event) => events.push(event),
+      (stop) => {
+        profilesDispatch({ type: 'RECEIVED', events });
+        stop();
+      },
+    );
+  }, [thread, replies, eose]);
 
-    sub.on('eose', () => sub.unsub());
-
-  }, [thread, replies]);
-
+  // 返信作成。スレッドの作成とやることはほぼ同様。
+  // e-tagでスレッドのイベントを参照し関連付けを行う。
   const createReply = ({ content, encodedPrivKey, useNIP07 }) => {
     (async () => {
       let event = {
         kind: 1,
         created_at: Math.floor(Date.now() / 1000),
-        tags: [['e', thread.id, bbsRelayURL]],
+        tags: [['e', thread.id, thread.relayURL]],
         content: content,
       };
 
@@ -127,14 +117,14 @@ function Thread() {
         event.sig = signEvent(event, privkey);
       }      
 
-      let pub = relayRef.current.publish(event);
-      pub.on('ok', () => {
-        window.alert('返信しました！');
-        setAt(new Date().getTime());
-      });
-      pub.on('failed', reason => {
-        window.alert(`返信に失敗しました...(${reason})`);
-      });
+      relay.current.publish(event)
+        .then(() => {
+          window.alert('返信しました！');
+          setAt(new Date().getTime());
+        })
+        .catch(() => {
+          window.alert(`返信に失敗しました...`);
+        });
     })();
   };
 
