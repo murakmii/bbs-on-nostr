@@ -6,3 +6,8 @@
 .Author .Name {
   color: #575757;
 }
+
+.Author .VerifiedDomain {
+  color: #c556c5;
+  font-size: 0.9em;
+}
