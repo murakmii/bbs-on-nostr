@@ -4,6 +4,7 @@ import { useOutlet, Link } from 'react-router-dom';
 import { useRef, useEffect, useState, createContext, useReducer } from 'react';
 import { 
   bbsRootReference,
+  parseNIP05Identifier,
   MultiplexedRelays
 } from './Nostr';
 
@@ -31,13 +32,15 @@ function profilesReducer(state, action) {
         eachPubKeys[e.pubkey].push({ ...JSON.parse(e.content), created_at: e.created_at });
       });
 
-      // 時系列でマージして1つのプロフィールにする
+      // 時系列でマージして1つのプロフィールにする。
+      // また、ドメイン認証情報の結果を'nip05Result'プロパティで保持するようにする
       const mergedProfiles = {};
       Object.keys(eachPubKeys).forEach(p => {
         mergedProfiles[p] = eachPubKeys[p]
           .sort((a, b) => a.created_at - b.created_at)
           .reduce((a, b) => Object.assign(a, b));
 
+        mergedProfiles[p].nip05Result = parseNIP05Identifier(mergedProfiles[p].nip05 || '') ? 'pending' : 'none';
         if (!mergedProfiles[p].picture) {
           mergedProfiles[p].picture = '/default-icon.jpg';
         }
@@ -52,6 +55,14 @@ function profilesReducer(state, action) {
       });
 
       newState = { ...state, ...mergedProfiles };
+      break;
+
+    case 'CHECKING_DOMAIN_IDENTIFIER':
+      newState = { ...state, [action.pubKey]: { ...state[action.pubKey], nip05Result: 'checking' } };
+      break;
+
+    case 'SET_DOMAIN_IDENTIFIER_RESULT':
+      newState = { ...state, [action.pubKey]: { ...state[action.pubKey], nip05Result: action.result } };
       break;
   }
 

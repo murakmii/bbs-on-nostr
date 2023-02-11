@@ -135,7 +135,7 @@ function Thread() {
           <img src={profiles[thread.pubkey] && profiles[thread.pubkey].picture} />
           <div className="Detail">
             <h2>{thread.subject}</h2>
-            <p><Author profile={profiles[thread.pubkey]} atUnix={thread.createdAt} /></p>
+            <p><Author pubKey={thread.pubkey} atUnix={thread.createdAt} /></p>
 
             <ReadableText>{thread.content}</ReadableText>
           </div>
@@ -154,7 +154,7 @@ function Thread() {
             </a>
             
             <div className="Detail">
-              <p><Author profile={profiles[r.pubkey]} atUnix={r.createdAt} /></p>
+              <p><Author pubKey={r.pubkey} atUnix={r.createdAt} /></p>
               <ReadableText>{r.content}</ReadableText>
             </div>
           </div>

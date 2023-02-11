@@ -98,7 +98,7 @@ function ThreadList() {
             <div>
               <h3><Link to={`/threads/${t.id}`}>{t.subject}</Link></h3>
               <p>
-                <Author profile={profiles && profiles[t.pubkey]} atUnix={t.createdAt} />
+                <Author pubKey={t.pubkey} atUnix={t.createdAt} />
                 <b className="Reaction" onClick={() => setEmojiSelectingFor(t)}>+ Reaction</b>
               </p>
               <div className="Reactions">

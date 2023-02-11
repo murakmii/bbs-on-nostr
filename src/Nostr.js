@@ -1,6 +1,17 @@
 import { relayInit } from 'nostr-tools';
 
+const nip05PartMatcher = /^[a-z0-9_\-\.]+$/;
+
 export const bbsRootReference = 'https://bbs-on-nostr.murakmii.dev';
+
+export const parseNIP05Identifier = (identifier) => {
+  const parts = identifier.toLowerCase().split('@');
+  if (parts.length !== 2) {
+    return null;
+  }
+
+  return (nip05PartMatcher.test(parts[0]) && nip05PartMatcher.test(parts[1])) ? parts : null;
+}
 
 // NIP-07(https://github.com/nostr-protocol/nips/blob/master/07.md)対応状況を確認する。
 // 確認といってもwindowオブジェクトのプロパティを確認するだけ。
