@@ -207,12 +207,17 @@ function App() {
   return (
     <div id="App">
       <h1><Link to="/">BBS on Nostr</Link></h1>
-      <p>
+      <p className="Description">
         Nostr上に実験的に実装されたBBSです:
         <a href="https://github.com/murakmii/bbs-on-nostr" target="_blank" rel="noreferrer">https://github.com/murakmii/bbs-on-nostr</a><br />
         リレーは nostr-pub.wellorder.net, relay.snort.social を使用させていただいています。<br />
-        認証情報を安全に扱うための<a href="https://github.com/nostr-protocol/nips/blob/master/07.md#implementation" target="_blank" rel="noreferrer">NIP-07対応のブラウザ拡張</a>の導入を推奨しています。
       </p>
+
+      <p className="Links">
+        <b>Nostr project links: </b>
+        <a href="https://nostr.hoku.in" target="_blank" rel="noreferrer">Nostr検索ポータル</a>
+      </p>
+
       {connected && (
         <NostrContext.Provider value={{relay: relayRef, pubKey, setPubKey}}>
           <BBSContext.Provider value={{ threads, reactions, profiles, profilesDispatch}}>

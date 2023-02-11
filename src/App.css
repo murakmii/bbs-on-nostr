@@ -15,9 +15,21 @@
   text-decoration: none;
 }
 
-#App > p {
+#App .Description {
   margin: 30px 0 50px 0;
   text-align: center;
+}
+
+#App .Links {
+  padding: 10px;
+  border: solid 1px #860486;
+  margin-bottom: 15px;
+  background-color: white;
+}
+
+#App .Links b {
+  color: #a537a5;
+  font-size: 1.2em;
 }
 
 #Main {

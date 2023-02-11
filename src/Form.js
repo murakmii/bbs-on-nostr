@@ -3,6 +3,7 @@ import Button from './Button';
 import { NostrContext } from './App';
 import { enableNIP07 } from './Nostr';
 import { useState, useEffect, useContext } from 'react';
+import { Link } from 'react-router-dom';
 import { nip19 } from 'nostr-tools';
 
 function Form({ forThread, onSubmit }) {
@@ -105,7 +106,7 @@ function Form({ forThread, onSubmit }) {
           <tr>
             <td colSpan="2">
               <input type="checkbox" id="ReadTOS" name="tos" onChange={() => setValidInput(validate())} />
-              <label htmlFor="ReadTOS">わたしは<a href="/tos" target="_blank" rel="noreferrer">利用規約</a>に同意します</label>
+              <label htmlFor="ReadTOS">わたしは<Link to="/tos">利用規約</Link>に同意します</label>
               <Button disabled={!validInput} onClick={submit}>{forThread ? 'スレッドを作成' : '返信'}</Button>
             </td>
           </tr>
