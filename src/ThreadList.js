@@ -1,5 +1,6 @@
 import './ThreadList.css';
 import Form from './Form';
+import Author from './Author';
 import { NostrContext, BBSContext } from './App';
 import { useState, useContext } from 'react';
 import { Link } from 'react-router-dom';
@@ -97,8 +98,8 @@ function ThreadList() {
             <div>
               <h3><Link to={`/threads/${t.id}`}>{t.subject}</Link></h3>
               <p>
-                by {profiles[t.pubkey] && (profiles[t.pubkey].display_name || profiles[t.pubkey].name)} created at {new Date(t.createdAt * 1000).toLocaleString()} 
-                <b onClick={() => setEmojiSelectingFor(t)}>+ Reaction</b>
+                <Author profile={profiles && profiles[t.pubkey]} atUnix={t.createdAt} />
+                <b className="Reaction" onClick={() => setEmojiSelectingFor(t)}>+ Reaction</b>
               </p>
               <div className="Reactions">
                 {reactions[t.id] && Object.keys(reactions[t.id]).map(emoji => {

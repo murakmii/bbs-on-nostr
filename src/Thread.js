@@ -1,6 +1,7 @@
 import './Thread.css';
 import Form from './Form';
 import ReadableText from './ReadableText';
+import Author from './Author';
 import { NostrContext, BBSContext } from './App';
 import { useState, useEffect, useContext } from 'react';
 import { nip19, getPublicKey, getEventHash, signEvent } from 'nostr-tools';
@@ -90,7 +91,7 @@ function Thread() {
       ],
       (event) => events.push(event),
       (stop) => {
-        profilesDispatch({ type: 'RECEIVED', events });
+        profilesDispatch({ type: 'RECEIVED', events, expected: pubkeys });
         stop();
       },
     );
@@ -133,10 +134,9 @@ function Thread() {
         <div id="ThreadContent">
           <img src={profiles[thread.pubkey] && profiles[thread.pubkey].picture} />
           <div className="Detail">
-            <h3>
-              {thread.subject}<br/>
-              <b>by {profiles[thread.pubkey] && profiles[thread.pubkey].display_name} created at {new Date(thread.createdAt * 1000).toLocaleString()}</b>
-            </h3>
+            <h2>{thread.subject}</h2>
+            <p><Author profile={profiles[thread.pubkey]} atUnix={thread.createdAt} /></p>
+
             <ReadableText>{thread.content}</ReadableText>
           </div>
         </div> 
@@ -154,7 +154,7 @@ function Thread() {
             </a>
             
             <div className="Detail">
-              <h4>{profiles[r.pubkey] && profiles[r.pubkey].display_name} at {new Date(r.createdAt * 1000).toLocaleString()}</h4>
+              <p><Author profile={profiles[r.pubkey]} atUnix={r.createdAt} /></p>
               <ReadableText>{r.content}</ReadableText>
             </div>
           </div>

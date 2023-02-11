@@ -23,7 +23,7 @@ function ReadableText({children}) {
   }
 
   return (
-    <p>{result}</p>
+    <p className="ReadableText">{result}</p>
   );
 }
 

@@ -37,6 +37,18 @@ function profilesReducer(state, action) {
         mergedProfiles[p] = eachPubKeys[p]
           .sort((a, b) => a.created_at - b.created_at)
           .reduce((a, b) => Object.assign(a, b));
+
+        if (!mergedProfiles[p].picture) {
+          mergedProfiles[p].picture = '/default-icon.jpg';
+        }
+      });
+
+      // 取得できなかったプロフィールについてはデフォルト値を設定
+      action.expected.forEach(p => {
+        if (mergedProfiles[p]) {
+          return;
+        }
+        mergedProfiles[p] = {name: 'Nostrich', picture: '/default-icon.jpg'};
       });
 
       newState = { ...state, ...mergedProfiles };
@@ -174,7 +186,7 @@ function App() {
       ],
       (event) => events.push(event),
       (stop) => {
-        profilesDispatch({ type: 'RECEIVED', events });
+        profilesDispatch({ type: 'RECEIVED', events, expected: pubkeys });
         stop();
       },
     );

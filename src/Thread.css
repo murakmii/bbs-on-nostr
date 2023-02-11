@@ -6,11 +6,6 @@
   border: solid 1px #860486;
 }
 
-#ThreadContent h3 b {
-  color: #999;
-  font-size: 0.7em;
-}
-
 #ThreadContent img {
   width: 70px;
   height: 70px;
@@ -20,8 +15,14 @@
   margin-right: 20px;
 }
 
-#ThreadContent p {
-  margin-top: 15px;
+#ThreadContent h2 {
+  font-size: 1.4em;
+  color: #3e3e3e;
+  margin-bottom: 5px;
+}
+
+#ThreadContent .ReadableText {
+  margin-top: 20px;
 }
 
 #Thread .Replies {
@@ -58,6 +59,6 @@
   margin-left: 10px;
 }
 
-#Thread .Replies .Reply .Detail p {
+#Thread .Replies .Reply .Detail .ReadableText {
   margin-top: 10px;
 }
