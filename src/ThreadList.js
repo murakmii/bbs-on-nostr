@@ -63,6 +63,7 @@ function ThreadList() {
         tags: [
           ['r', bbsRootReference],
           ['e', emojiSelectingFor.id, emojiSelectingFor.relayURL],
+          ['p', emojiSelectingFor.pubkey],
         ],
         content: emojiData.emoji,
       };
