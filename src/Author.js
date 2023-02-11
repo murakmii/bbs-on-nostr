@@ -31,7 +31,6 @@ function cacheJSON(url) {
 // キャッシュ上のJSONを使いドメイン認証を行う
 function verify(url, name, pubKey) {
   return new Promise((resolve, reject) => {
-    console.log('verify', name, pubKey, verifyCache[url])
     const json = verifyCache[url];
     if (json.names && json.names[name] && json.names[name] === pubKey) {
       resolve();
