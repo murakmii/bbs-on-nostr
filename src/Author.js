@@ -15,7 +15,7 @@ function cacheJSON(url) {
       return;
     }
 
-    fetch(url, {method: 'GET', mode: 'cors', cache: 'no-cache', redirect: 'error' })
+    fetch(url, {method: 'GET', mode: 'cors', redirect: 'error' })
       .then(response => response.json())
       .then(j => {
         verifyCache[url] = j;
