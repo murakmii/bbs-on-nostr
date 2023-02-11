@@ -21,10 +21,12 @@
 }
 
 #App .Links {
+  max-width: 900px;
   padding: 10px;
   border: solid 1px #860486;
-  margin-bottom: 15px;
+  margin: 0 auto 15px auto;
   background-color: white;
+  box-sizing: border-box;
 }
 
 #App .Links b {
