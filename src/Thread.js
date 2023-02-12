@@ -104,7 +104,10 @@ function Thread() {
       let event = {
         kind: 1,
         created_at: Math.floor(Date.now() / 1000),
-        tags: [['e', thread.id, thread.relayURL]],
+        tags: [
+          ['e', thread.id, thread.relayURL],
+          ['r', bbsRootReference],
+        ],
         content: content,
       };
 

@@ -82,36 +82,37 @@ function App() {
   // 都度subscribeするとリレーのrate limitに達しやすい。
   // そのためスレッドとそのリアクションは常にメモリ上に保持し、かつsubscribeも維持し続けるようにしている。
   const [connected, setConnected] = useState(false);
-  const [threads, setThreads] = useState([]);
+  const [threads, setThreads] = useState({});
+  const [lastReplyTimes, setLastReplyTimes] = useState({});
   const [reactions, setReactions] = useState({});
   const [eose, setEOSE] = useState(false);
 
   const [profiles, profilesDispatch] = useReducer(profilesReducer, {});
   const [pubKey, setPubKey] = useState(null);
   
-  // 受信したスレッドを保持
-  const receiveThread = (event, relayURL) => {
-    setThreads(prev => {
-      if (prev.find(t => t.id === event.id)) {
-        return prev;
-      }
-      
-      // e-tagがあるなら更新日計算のために取得しているリプライなのでスレッドではない
-      if (event.tags.find(t => t[0] === 'e')) {
-        return prev;
-      }
+  // 受信したテキストイベントを処理。
+  // ここで受信するテキストイベントはスレッドとリプライ両方を取得している。
+  // リプライは更新日時計算用で、e-tagの有無でスレッドかどうかを判断できる。
+  const receiveText = (event, relayURL) => {
+    const eTag = event.tags.find(t => t[0] === 'e');
+    if (eTag && eTag[1]) {
+      setLastReplyTimes(prev => {
+        const newState = { ...prev };
+        newState[eTag[1]] = Math.max(newState[eTag[1]] || 0, event.created_at);
 
-      const newThreads = JSON.parse(JSON.stringify(prev)).concat({
-        id: event.id,
-        pubkey: event.pubkey, 
-        createdAt: event.created_at,
-        content: event.content,
-        subject: event.tags.filter(t => t[0] === 'subject').map(t => t[1])[0] || 'No title',
-        relayURL, // スレッドに返信する際、e-tagのパラメータとして参照リレー先が必要なのでスレッドに保持しておく
+        return newState;
       });
+      return;
+    }
 
-      return newThreads.sort((a, b) => b.createdAt - a.createdAt);
-    });
+    setThreads(prev => ({ ...prev, [event.id]: {
+      id: event.id,
+      pubkey: event.pubkey, 
+      createdAt: event.created_at,
+      content: event.content,
+      subject: event.tags.filter(t => t[0] === 'subject').map(t => t[1])[0] || 'No title',
+      relayURL, // スレッドに返信する際、e-tagのパラメータとして参照リレー先が必要なのでスレッドに保持しておく
+    }}));
   };
 
   // 受信したリアクションを保持
@@ -139,7 +140,9 @@ function App() {
   };
 
   // スレッドとリアクションのためのsubscriptionを立ち上げる。
-  // r-tag(https://github.com/nostr-protocol/nips/blob/master/12.md)に'https://bbs-on-nostr.murakmii.dev'を持つノートをスレッドとして扱う。
+  // r-tag(https://github.com/nostr-protocol/nips/blob/master/12.md)に'https://bbs-on-nostr.murakmii.dev'を持つノートを
+  // 掲示板関連のテキストイベントとして取得する。
+  //
   // リアクションについては、今のところ、r-tagで絞り込みどのスレッドへのリアクションかはクライアント側で判定している。
   // subscriptionには複数のフィルタを設定できるため、1つのsubscriptionで両方を取得しコールバック内でどちらかを判断していく。
   useEffect(() => {
@@ -153,14 +156,14 @@ function App() {
           {
             kinds: [1],
             '#r': [bbsRootReference],
-            limit: 1000,
+            limit: 300,
           },
           {
             kinds: [7],
             '#r': [bbsRootReference],
           }
         ],
-        (event, relayURL) => event.kind === 1 ? receiveThread(event, relayURL) : receiveReaction(event),
+        (event, relayURL) => event.kind === 1 ? receiveText(event, relayURL) : receiveReaction(event),
         () => {
           // NIP-15(https://github.com/nostr-protocol/nips/blob/master/15.md)に対応しているリレーなら、
           // 現時点でフィルタにマッチするイベントを送り切った時点でEOSE通知を送ってくれる。
@@ -184,7 +187,7 @@ function App() {
   useEffect(() => {
     // 未取得のプロフィールのみ取得
     const exists = new Set(Object.keys(profiles));
-    const pubkeys = Array.from(new Set(threads.map(t => t.pubkey).filter(p => !exists.has(p))));
+    const pubkeys = Array.from(new Set(Object.values(threads).map(t => t.pubkey).filter(p => !exists.has(p))));
 
     if (pubkeys.length == 0 || !eose) {
       return;
@@ -208,6 +211,15 @@ function App() {
     );
   }, [threads, eose]);
 
+  // 更新日時をマージしてソート済みスレッド一覧を生成。EOSEまでは頻繁に内容が変わるので空にして見せないようにしておく
+  // TODO: レンダリングの度にソートするのは微妙そう
+  const sortedThreads = !eose ? [] : Object.values(threads).map(t => (
+    { ...t, updatedAt: lastReplyTimes[t.id] || t.createdAt }
+
+  )).sort((a, b) => (
+    Math.max(b.updatedAt, b.createdAt) - Math.max(a.updatedAt, a.createdAt)
+  ));
+
   const child = useOutlet();
   return (
     <div id="App">
@@ -225,7 +237,7 @@ function App() {
 
       {connected && (
         <NostrContext.Provider value={{relay: relayRef, pubKey, setPubKey}}>
-          <BBSContext.Provider value={{ threads, reactions, profiles, profilesDispatch}}>
+          <BBSContext.Provider value={{ threads: sortedThreads, reactions, profiles, profilesDispatch}}>
             <div id="Main">
               {child || <ThreadList />}
             </div>
