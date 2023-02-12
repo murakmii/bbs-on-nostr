@@ -95,13 +95,18 @@ function App() {
       if (prev.find(t => t.id === event.id)) {
         return prev;
       }
+      
+      // e-tagがあるなら更新日計算のために取得しているリプライなのでスレッドではない
+      if (event.tags.find(t => t[0] === 'e')) {
+        return prev;
+      }
 
       const newThreads = JSON.parse(JSON.stringify(prev)).concat({
         id: event.id,
         pubkey: event.pubkey, 
         createdAt: event.created_at,
         content: event.content,
-        subject: event.tags.filter(t => t[0] == 'subject').map(t => t[1])[0] || 'No title',
+        subject: event.tags.filter(t => t[0] === 'subject').map(t => t[1])[0] || 'No title',
         relayURL, // スレッドに返信する際、e-tagのパラメータとして参照リレー先が必要なのでスレッドに保持しておく
       });
 
