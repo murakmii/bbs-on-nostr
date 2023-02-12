@@ -69,6 +69,14 @@ export class MultiplexedRelays {
     return this.conn;
   }
 
+  connectivityStatus() {
+    const active = new Set(this.activeRelays.map(r => r.url));
+    const status = {};
+
+    this.relayURLs.forEach(r => status[r] = active.has(r));
+    return status;
+  }
+
   // 一連のリレーサーバーへイベントを送信し、1件でも送信できたなら履行されるPromiseを返す
   publish(event) {
     return Promise.any(this.activeRelays.map(r => {

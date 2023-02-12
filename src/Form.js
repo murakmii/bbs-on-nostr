@@ -8,7 +8,9 @@ import { nip19 } from 'nostr-tools';
 
 function Form({ forThread, onSubmit }) {
   const [validInput, setValidInput] = useState(false);
-  const {pubKey, setPubKey} = useContext(NostrContext);
+  const {relay, pubKey, setPubKey} = useContext(NostrContext);
+
+  const connectivity = relay.current.connectivityStatus();
 
   // 公開鍵の取得の可否でBBSでNIP-07を使用するかどうかを決定する
   // 拒否された場合は拡張未導入と同様の振る舞いとする(秘密鍵手入力)
@@ -98,6 +100,12 @@ function Form({ forThread, onSubmit }) {
                 placeholder="安全のため、'nsec'という文字を含めることはできません"
                 onChange={() => setValidInput(validate())}
               />
+            </td>
+          </tr>
+          <tr>
+            <th>リレー接続状況</th>
+            <td className="Connectivity">
+              {Object.keys(connectivity).map(url => <b className={connectivity[url] ? 'Connected' : 'Disconnected'}>{url.replace('wss://', '')}</b>)}
             </td>
           </tr>
           <tr>

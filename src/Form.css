@@ -36,6 +36,22 @@
   resize: none;
 }
 
+#Form table .Connectivity {
+  font-size: 0.9em;
+}
+
+#Form table .Connectivity > b {
+  padding-right: 5px;
+}
+
+#Form table .Connected {
+  color: #35b535;
+}
+
+#Form table .Disconnected {
+  color: #b2b2b2;
+}
+
 #Form .checkingNIP07 {
   padding: 15px;
   font-weight: bold;
